@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BU2 · Enrolment Tracker — 19 May 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh}
+
+/* HEADER */
+.tl-header{background:#161b27;border-bottom:1px solid #1e2d45;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tl-title{font-size:16px;font-weight:700;color:#e2e8f0;letter-spacing:.3px}
+.tl-sub{font-size:11px;color:#475569;margin-top:2px}
+.tl-badges{display:flex;gap:8px;align-items:center}
+.tl-badge{background:#1e2d45;color:#94a3b8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+.tl-date{background:#1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px}
+
+/* KPI CARDS */
+.kpi-section{padding:20px 24px 4px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c-ind::before{background:#6366f1}
+.kpi-card.c-cur::before{background:#06b6d4}
+.kpi-card.c-pct::before{background:#10b981}
+.kpi-card.c-ccc::before{background:#f59e0b}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:6px}
+.kpi-value{font-size:32px;font-weight:800;line-height:1;color:#e2e8f0}
+.kpi-value.good{color:#10b981}.kpi-value.warn{color:#f59e0b}.kpi-value.bad{color:#f43f5e}
+.kpi-sub{font-size:11px;color:#475569;margin-top:5px}
+.kpi-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px}
+
+/* PARTNER CARDS */
+.partner-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.pcard{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:18px 20px}
+.pcard-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pcard-name{font-size:13px;font-weight:700;color:#e2e8f0}
+.pcard-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pb-ecu{background:#312e81;color:#a5b4fc}
+.pb-vu{background:#0c4a6e;color:#7dd3fc}
+.pb-uc{background:#064e3b;color:#6ee7b7}
+.pcard-metrics{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.pm-label{font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.pm-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.pm-value.good{color:#10b981}.pm-value.warn{color:#f59e0b}.pm-value.bad{color:#f43f5e}
+.pcard-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:12px;overflow:hidden}
+
+/* SECTION HEADER */
+.section-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;padding:0 24px 10px}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;padding:0 24px 14px;flex-wrap:wrap;align-items:center}
+.fbtn{background:#161b27;border:1px solid #1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:.15s}
+.fbtn:hover{border-color:#475569;color:#94a3b8}
+.fbtn.act{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+
+/* TABLE */
+.tbl-wrap{padding:0 24px 32px;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:#0d1117;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;text-align:right;border-bottom:2px solid #1e2d45;white-space:nowrap;cursor:pointer;user-select:none}
+.tbl th:hover{color:#94a3b8}
+.tbl th.left{text-align:left}
+.tbl th .sort-arrow{margin-left:4px;opacity:.4;font-size:9px}
+.tbl th.sorted .sort-arrow{opacity:1;color:#6366f1}
+.tbl td{padding:10px 12px;border-bottom:1px solid #0d1117;text-align:right;color:#e2e8f0;font-weight:600;vertical-align:middle}
+.tbl td.left{text-align:left;color:#cbd5e1;font-weight:500}
+.tbl tr.adv-row{cursor:pointer;transition:background .1s}
+.tbl tr.adv-row:hover td{background:#161b27}
+.tbl tr.adv-row.expanded td{background:#161b27;border-bottom:none}
+.tbl tfoot td{border-top:2px solid #1e2d45;background:#0d1117;font-weight:700;color:#94a3b8;font-size:12px}
+
+/* PARTNER BADGES */
+.lb-partner{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:700;display:inline-block}
+.lbp-ECU{background:#312e81;color:#a5b4fc}
+.lbp-VU{background:#0c4a6e;color:#7dd3fc}
+.lbp-UC{background:#064e3b;color:#6ee7b7}
+
+/* BAR CELL */
+.bar-bg{background:#1e2d45;border-radius:3px;height:5px;overflow:hidden;margin-top:4px;width:80px}
+.bar-fill{height:5px;border-radius:3px}
+
+/* EXPAND CHEVRON */
+.chev{display:inline-block;font-size:10px;color:#2d3f5e;transition:transform .2s;margin-left:6px}
+.expanded .chev{transform:rotate(90deg)}
+
+/* EXPANDED ROW */
+.expand-row td{padding:0!important;border-bottom:1px solid #1e2d45!important}
+.expand-panel{background:#0d1117;padding:16px 24px;display:none}
+.expand-row.open .expand-panel{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.ep-section{flex:1;min-width:180px}
+.ep-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:10px}
+.ep-metrics{display:flex;gap:20px}
+.ep-metric{}
+.ep-label{font-size:9px;color:#475569;font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.ep-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.ep-sub{font-size:10px;color:#475569;margin-top:2px}
+.ep-divider{width:1px;background:#1e2d45;flex-shrink:0}
+
+/* SHOW MORE */
+.show-more-row td{background:#0d1117;border-bottom:none;text-align:center;padding:10px}
+.show-more-btn{background:transparent;border:1px solid #1e2d45;color:#475569;font-size:11px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+.show-more-btn:hover{border-color:#475569;color:#94a3b8}
+
+/* NO DATA */
+.no-data{padding:40px;text-align:center;color:#475569;font-size:13px}
+
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .partner-row{grid-template-columns:1fr}
+  .pcard-metrics{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="tl-header">
+  <div>
+    <div class="tl-title">BU2 · Enrolment Tracker</div>
+    <div class="tl-sub">Census incentive & start target tracking · Next term enrolments · Cohort conversion</div>
+  </div>
+  <div class="tl-badges">
+    <span class="tl-badge">TRACKER</span>
+    <span class="tl-date">19 May 2026</span>
+  </div>
+</div>
+
+<div class="kpi-section">
+  <div class="kpi-row" id="kpi-cards"></div>
+  <div class="section-hd">Partner Summary</div>
+  <div class="partner-row" id="partner-cards"></div>
+  <div class="section-hd" style="margin-top:4px">Advisor Detail</div>
+</div>
+
+<div class="filter-bar" id="filters"></div>
+
+<div class="tbl-wrap">
+  <table class="tbl">
+    <thead id="tbl-head"></thead>
+    <tbody id="tbl-body"></tbody>
+    <tfoot id="tbl-foot"></tfoot>
+  </table>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const ADVISORS_RAW = [
+  // ECU (drop rate 7.5%)
+  {name:'Nova Brownlie',       partner:'ECU', dropRate:0.075, incentiveTgt:191, pool:271, current:200, rego:6,  reEng:19, trep:25},
+  {name:'Mia Yourn',           partner:'ECU', dropRate:0.075, incentiveTgt:208, pool:301, current:226, rego:2,  reEng:0,  trep:2},
+  {name:'Lily Graciano',       partner:'ECU', dropRate:0.075, incentiveTgt:154, pool:215, current:150, rego:0,  reEng:23, trep:23},
+  {name:'Katina Astles',       partner:'ECU', dropRate:0.075, incentiveTgt:149, pool:211, current:153, rego:0,  reEng:12, trep:12},
+  {name:'Nequila Vincent',     partner:'ECU', dropRate:0.075, incentiveTgt:212, pool:298, current:208, rego:10, reEng:33, trep:43},
+  {name:'Sofie Katsipodas',    partner:'ECU', dropRate:0.075, incentiveTgt:205, pool:286, current:224, rego:8,  reEng:16, trep:24},
+  // VU (drop rate 7.5%)
+  {name:'Aisha Bowie',         partner:'VU',  dropRate:0.075, incentiveTgt:188, pool:260, current:196, rego:1,  reEng:25, trep:26},
+  {name:'Annaliese Giegerl',   partner:'VU',  dropRate:0.075, incentiveTgt:182, pool:244, current:205, rego:6,  reEng:20, trep:26},
+  {name:'Karen Price',         partner:'VU',  dropRate:0.075, incentiveTgt:201, pool:277, current:234, rego:4,  reEng:27, trep:31},
+  {name:'Mary Hammoud',        partner:'VU',  dropRate:0.075, incentiveTgt:163, pool:227, current:204, rego:0,  reEng:7,  trep:7},
+  {name:'Bronwyn Testa',       partner:'VU',  dropRate:0.075, incentiveTgt:159, pool:224, current:186, rego:6,  reEng:17, trep:23},
+  // UC (drop rate 9%)
+  {name:'Jesse Smith',         partner:'UC',  dropRate:0.09,  incentiveTgt:246, pool:349, current:261, rego:5,  reEng:37, trep:42},
+  {name:'Mignionne Fernandes', partner:'UC',  dropRate:0.09,  incentiveTgt:202, pool:288, current:235, rego:5,  reEng:23, trep:28},
+  {name:'Bo Plicharoensuk',    partner:'UC',  dropRate:0.09,  incentiveTgt:242, pool:345, current:247, rego:7,  reEng:43, trep:50},
+  {name:'Rhea Kapoor',         partner:'UC',  dropRate:0.09,  incentiveTgt:232, pool:336, current:243, rego:18, reEng:61, trep:79},
+  {name:'Bianca Ceinar',       partner:'UC',  dropRate:0.09,  incentiveTgt:254, pool:358, current:286, rego:4,  reEng:35, trep:39},
+  {name:'Khushboo Italiya',    partner:'UC',  dropRate:0.09,  incentiveTgt:249, pool:354, current:257, rego:15, reEng:37, trep:52},
+];
+
+// At-risk uncalled data (for expanded rows only)
+const TL_DATA = {
+  'Nova Brownlie':       {pool:271, uncalled:15, pct:5.5},
+  'Mia Yourn':           {pool:306, uncalled:26, pct:8.5},
+  'Lily Graciano':       {pool:209, uncalled:4,  pct:1.9},
+  'Katina Astles':       {pool:208, uncalled:5,  pct:2.4},
+  'Nequila Vincent':     {pool:295, uncalled:11, pct:3.7},
+  'Sofie Katsipodas':    {pool:288, uncalled:13, pct:4.5},
+  'Aisha Bowie':         {pool:260, uncalled:13, pct:5.0},
+  'Annaliese Giegerl':   {pool:252, uncalled:4,  pct:1.6},
+  'Karen Price':         {pool:281, uncalled:5,  pct:1.8},
+  'Mary Hammoud':        {pool:231, uncalled:3,  pct:1.3},
+  'Bronwyn Testa':       {pool:227, uncalled:5,  pct:2.2},
+  'Jesse Smith':         {pool:347, uncalled:6,  pct:1.7},
+  'Mignionne Fernandes': {pool:282, uncalled:15, pct:5.3},
+  'Bo Plicharoensuk':    {pool:338, uncalled:12, pct:3.6},
+  'Rhea Kapoor':         {pool:334, uncalled:10, pct:3.0},
+  'Bianca Ceinar':       {pool:355, uncalled:16, pct:4.5},
+  'Khushboo Italiya':    {pool:344, uncalled:6,  pct:1.7},
+};
+
+const PARTNER_META = {
+  ECU: {label:'Edith Cowan University', badgeCls:'pb-ecu', lbCls:'lbp-ECU', barClr:'#6366f1', stretchTgt:1131},
+  VU:  {label:'Victoria University',    badgeCls:'pb-vu',  lbCls:'lbp-VU',  barClr:'#06b6d4', stretchTgt:905},
+  UC:  {label:'University of Canberra', badgeCls:'pb-uc',  lbCls:'lbp-UC',  barClr:'#10b981', stretchTgt:1443},
+};
+
+// ─── COMPUTE DERIVED VALUES ───────────────────────────────────────────────────
+const ADVISORS = ADVISORS_RAW.map(a => {
+  const startTgt   = Math.round(a.incentiveTgt / (1 - a.dropRate));
+  const needed     = startTgt - a.current;
+  const pctInc     = a.current / a.incentiveTgt;
+  const pctStart   = a.current / startTgt;
+  const ccc        = a.current / a.pool;   // cohort conversion %
+  return {...a, startTgt, needed, pctInc, pctStart, ccc, tl: TL_DATA[a.name]};
+});
+
+// ─── RAG HELPERS ─────────────────────────────────────────────────────────────
+function ragPct(v)     { return v >= 1.0 ? '#10b981' : v >= 0.85 ? '#f59e0b' : '#f43f5e'; }
+function ragCls(v)     { return v >= 1.0 ? 'good' : v >= 0.85 ? 'warn' : 'bad'; }
+function ragCCC(v)     { return v >= 0.8 ? '#10b981' : v >= 0.65 ? '#f59e0b' : '#f43f5e'; }
+function ragCCCCls(v)  { return v >= 0.8 ? 'good' : v >= 0.65 ? 'warn' : 'bad'; }
+function ragUncalled(p){ return p >= 6 ? '#f43f5e' : p >= 3 ? '#f59e0b' : '#10b981'; }
+function fmt1(v)       { return (v * 100).toFixed(1) + '%'; }
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let activeFilter = 'ALL';
+let sortCol      = 'pctInc';
+let sortDir      = -1;
+let expandedRow  = null;
+let showAll      = false;
+const PAGE_SIZE  = 10;
+
+// ─── KPI CARDS (4 cards) ─────────────────────────────────────────────────────
+function renderKPIs() {
+  const all      = ADVISORS;
+  const totCur   = all.reduce((s,a) => s + a.current, 0);
+  const totTgt   = all.reduce((s,a) => s + a.incentiveTgt, 0);
+  const totPool  = all.reduce((s,a) => s + a.pool, 0);
+  const pctInc   = totCur / totTgt;
+  const ccc      = totCur / totPool;
+  const atTarget = all.filter(a => a.pctInc >= 1.0).length;
+
+  const cards = [
+    {
+      cls:'c-cur', label:'Total Enrolled',
+      value: totCur.toLocaleString(),
+      sub: `vs ${totTgt.toLocaleString()} incentive target`,
+      barW: Math.min(pctInc * 100, 100), barClr:'#06b6d4'
+    },
+    {
+      cls:'c-pct', label:'% to Incentive',
+      value: fmt1(pctInc), valueCls: ragCls(pctInc),
+      sub: `${atTarget} of ${all.length} advisors at target`,
+      barW: Math.min(pctInc * 100, 100), barClr: ragPct(pctInc)
+    },
+    {
+      cls:'c-ind', label:'Incentive Target',
+      value: totTgt.toLocaleString(),
+      sub: `Start target: ${all.reduce((s,a) => s + a.startTgt, 0).toLocaleString()}`,
+      barW: 100, barClr:'#6366f1'
+    },
+    {
+      cls:'c-ccc', label:'Eligible Pool Conversion',
+      value: fmt1(ccc), valueCls: ragCCCCls(ccc),
+      sub: `${totCur.toLocaleString()} enrolled of ${totPool.toLocaleString()} eligible`,
+      barW: Math.min(ccc * 100, 100), barClr: ragCCC(ccc)
+    },
+  ];
+
+  document.getElementById('kpi-cards').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value${c.valueCls ? ' ' + c.valueCls : ''}">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${c.barW}%;background:${c.barClr}"></div></div>
+    </div>`).join('');
+}
+
+// ─── PARTNER CARDS ───────────────────────────────────────────────────────────
+function renderPartners() {
+  const html = ['ECU','VU','UC'].map(p => {
+    const advs = ADVISORS.filter(a => a.partner === p);
+    const cur  = advs.reduce((s,a) => s + a.current, 0);
+    const tgt  = advs.reduce((s,a) => s + a.incentiveTgt, 0);
+    const pool = advs.reduce((s,a) => s + a.pool, 0);
+    const pct  = cur / tgt;
+    const ccc  = cur / pool;
+    const meta = PARTNER_META[p];
+    const atTgt = advs.filter(a => a.pctInc >= 1.0).length;
+    return `
+    <div class="pcard">
+      <div class="pcard-hd">
+        <div class="pcard-name">${meta.label}</div>
+        <span class="pcard-badge ${meta.badgeCls}">${p}</span>
+      </div>
+      <div class="pcard-metrics">
+        <div><div class="pm-label">Enrolled</div><div class="pm-value">${cur.toLocaleString()}</div></div>
+        <div><div class="pm-label">Target</div><div class="pm-value">${tgt.toLocaleString()}</div></div>
+        <div><div class="pm-label">% to Target</div><div class="pm-value ${ragCls(pct)}">${fmt1(pct)}</div></div>
+        <div><div class="pm-label">Pool Conv.</div><div class="pm-value ${ragCCCCls(ccc)}">${fmt1(ccc)}</div></div>
+      </div>
+      <div class="pcard-bar" style="margin-top:12px">
+        <div style="height:3px;border-radius:2px;background:${meta.barClr};width:${Math.min(pct*100,100)}%"></div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;font-weight:700;color:#475569;line-height:1.2">Stretch Target &nbsp;${meta.stretchTgt.toLocaleString()}</div>
+      <div style="margin-top:8px;font-size:10px;color:#475569">${atTgt}/${advs.length} advisors at incentive target · Eligible pool: ${pool.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('partner-cards').innerHTML = html;
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────────────────────
+function renderFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  ['ALL','ECU','VU','UC'].forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (activeFilter === p ? ' act' : '');
+    b.textContent = p === 'ALL' ? 'All Partners' : p;
+    b.onclick = () => { activeFilter = p; showAll = false; expandedRow = null; renderFilters(); renderTable(); };
+    el.appendChild(b);
+  });
+}
+
+// ─── TABLE ───────────────────────────────────────────────────────────────────
+const COLS = [
+  {key:null,       label:'',                th:'left',  nosort:true},
+  {key:'name',     label:'Advisor',         th:'left'},
+  {key:'partner',  label:'Partner',         th:'left'},
+  {key:'incentiveTgt', label:'Incentive Tgt', th:'right'},
+  {key:'current',  label:'Enrolled',        th:'right'},
+  {key:'pctInc',   label:'% Incentive',     th:'right'},
+  {key:'startTgt', label:'Start Tgt',       th:'right'},
+  {key:'needed',   label:'Need to Start',   th:'right'},
+  {key:'ccc',      label:'Cohort Conv.',    th:'right'},
+  {key:null,       label:'',                th:'right', nosort:true},
+];
+
+function renderTableHead() {
+  document.getElementById('tbl-head').innerHTML = `<tr>${COLS.map(c => {
+    if(c.nosort) return `<th class="${c.th}"></th>`;
+    const sorted = sortCol === c.key;
+    const arrow  = sorted ? (sortDir === -1 ? '▼' : '▲') : '▼';
+    return `<th class="${c.th}${sorted ? ' sorted' : ''}" onclick="setSort('${c.key}')">${c.label}<span class="sort-arrow">${arrow}</span></th>`;
+  }).join('')}</tr>`;
+}
+
+function setSort(key) {
+  if(sortCol === key) sortDir *= -1;
+  else { sortCol = key; sortDir = -1; }
+  expandedRow = null;
+  renderTable();
+}
+
+function renderTable() {
+  renderTableHead();
+
+  const sorted = ADVISORS
+    .filter(a => activeFilter === 'ALL' || a.partner === activeFilter)
+    .sort((a, b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if(typeof av === 'string') return sortDir * av.localeCompare(bv);
+      return sortDir * (av - bv);
+    });
+
+  // Determine which rows to show
+  const isAll   = activeFilter === 'ALL';
+  const visible = (isAll && !showAll) ? sorted.slice(0, PAGE_SIZE) : sorted;
+  const hidden  = sorted.length - visible.length;
+
+  let rows = '';
+  visible.forEach((a, i) => {
+    const pctClr = ragPct(a.pctInc);
+    const cccClr = ragCCC(a.ccc);
+    const meta   = PARTNER_META[a.partner];
+    const isExp  = expandedRow === a.name;
+    const badge  = `<span class="lb-partner ${meta.lbCls}">${a.partner}</span>`;
+
+    // Need to Start: ✓ if done, otherwise count
+    const neededCell = a.needed <= 0
+      ? `<span style="color:#10b981;font-size:14px">✓</span>`
+      : a.needed <= 5
+        ? `<span style="color:#f59e0b;font-weight:700">${a.needed}</span>`
+        : `<span style="color:#f43f5e;font-weight:700">${a.needed}</span>`;
+
+    rows += `
+    <tr class="adv-row${isExp ? ' expanded' : ''}" onclick="toggleRow('${a.name.replace(/'/g,"\\'")}')">
+      <td class="left" style="color:#475569;font-size:11px;width:28px">${i+1}</td>
+      <td class="left">${a.name}<span class="chev">▶</span></td>
+      <td class="left">${badge}</td>
+      <td style="color:#6366f1">${a.incentiveTgt.toLocaleString()}</td>
+      <td style="color:#06b6d4">${a.current}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(a.pctInc/1.3*100,100)}%;background:${pctClr}"></div></div>
+          <span style="color:${pctClr};min-width:42px;text-align:right">${fmt1(a.pctInc)}</span>
+        </div>
+      </td>
+      <td style="color:#64748b">${a.startTgt}</td>
+      <td>${neededCell}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(a.ccc*100,100)}%;background:${cccClr}"></div></div>
+          <span style="color:${cccClr};min-width:42px;text-align:right">${fmt1(a.ccc)}</span>
+        </div>
+      </td>
+      <td></td>
+    </tr>
+    <tr class="expand-row${isExp ? ' open' : ''}">
+      <td colspan="10">
+        <div class="expand-panel">${buildExpandPanel(a)}</div>
+      </td>
+    </tr>`;
+  });
+
+  // Show more row
+  if(hidden > 0) {
+    rows += `<tr class="show-more-row">
+      <td colspan="10">
+        <button class="show-more-btn" onclick="showAllRows()">▾ Show ${hidden} more advisors</button>
+      </td>
+    </tr>`;
+  }
+
+  if(!sorted.length) rows = `<tr><td colspan="10" class="no-data">No advisors match the selected filter.</td></tr>`;
+
+  // Footer totals
+  const totPool  = sorted.reduce((s,a) => s + a.pool, 0);
+  const totCur   = sorted.reduce((s,a) => s + a.current, 0);
+  const totTgt   = sorted.reduce((s,a) => s + a.incentiveTgt, 0);
+  const totStart = sorted.reduce((s,a) => s + a.startTgt, 0);
+  const totNeed  = sorted.reduce((s,a) => s + Math.max(a.needed, 0), 0);
+  const totPct   = totTgt ? totCur / totTgt : 0;
+  const totCCC   = totPool ? totCur / totPool : 0;
+  const pctClr   = ragPct(totPct);
+  const cccClr   = ragCCC(totCCC);
+
+  document.getElementById('tbl-body').innerHTML = rows;
+  document.getElementById('tbl-foot').innerHTML = `
+    <tr>
+      <td class="left" colspan="3">Total / ${sorted.length} advisors</td>
+      <td style="color:#6366f1">${totTgt.toLocaleString()}</td>
+      <td style="color:#06b6d4">${totCur.toLocaleString()}</td>
+      <td style="text-align:right;color:${pctClr}">${fmt1(totPct)}</td>
+      <td style="color:#64748b">${totStart.toLocaleString()}</td>
+      <td style="text-align:right">${totNeed > 0 ? `<span style="color:#f59e0b">${totNeed}</span>` : '<span style="color:#10b981;font-size:14px">✓</span>'}</td>
+      <td style="text-align:right;color:${cccClr}">${fmt1(totCCC)}</td>
+      <td></td>
+    </tr>`;
+}
+
+function showAllRows() {
+  showAll = true;
+  renderTable();
+}
+
+// ─── EXPAND PANEL ────────────────────────────────────────────────────────────
+function buildExpandPanel(a) {
+  const tl      = a.tl;
+  const uncClr  = tl ? ragUncalled(tl.pct) : '#475569';
+  const regoBarW = a.trep ? Math.round(a.rego / a.trep * 100) : 0;
+
+  const convDetail = a.needed <= 0
+    ? `<div style="font-size:11px;color:#10b981;font-weight:600;margin-top:8px">✓ Already at or past start target</div>`
+    : `<div style="font-size:11px;color:#94a3b8;margin-top:6px">
+        Need <strong style="color:#f59e0b">${a.needed}</strong> more from a TREP of
+        <strong style="color:#f59e0b">${a.trep}</strong>
+        — <strong style="color:${a.needed/a.trep > 0.65 ? '#f43f5e' : a.needed/a.trep > 0.35 ? '#f59e0b' : '#10b981'}">${fmt1(a.needed/a.trep)}</strong> conversion rate required
+       </div>`;
+
+  const tlSection = tl ? `
+    <div class="ep-divider"></div>
+    <div class="ep-section">
+      <div class="ep-title">At-Risk Uncalled (TL View)</div>
+      <div class="ep-metrics">
+        <div class="ep-metric">
+          <div class="ep-label">Students</div>
+          <div class="ep-value" style="color:${uncClr}">${tl.uncalled}</div>
+          <div class="ep-sub">of ${tl.pool} eligible</div>
+        </div>
+        <div class="ep-metric">
+          <div class="ep-label">% of Pool</div>
+          <div class="ep-value" style="color:${uncClr}">${tl.pct}%</div>
+          <div class="ep-sub">${tl.pct < 3 ? 'On track' : tl.pct < 6 ? 'Monitor' : 'Action needed'}</div>
+        </div>
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="ep-section">
+      <div class="ep-title">TREP Breakdown</div>
+      <div class="ep-metrics">
+        <div class="ep-metric">
+          <div class="ep-label">Rego</div>
+          <div class="ep-value" style="color:#6366f1">${a.rego}</div>
+          <div class="ep-sub">Currently enrolled</div>
+        </div>
+        <div class="ep-metric">
+          <div class="ep-label">Re-Eng</div>
+          <div class="ep-value" style="color:#06b6d4">${a.reEng}</div>
+          <div class="ep-sub">Not active / leave</div>
+        </div>
+        <div class="ep-metric">
+          <div class="ep-label">Total TREP</div>
+          <div class="ep-value" style="color:#f59e0b">${a.trep}</div>
+          <div class="ep-sub">Re-engageable pool</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <div style="width:80px;height:4px;background:#1e2d45;border-radius:2px;overflow:hidden">
+          <div style="height:4px;width:${regoBarW}%;background:#6366f1;border-radius:2px"></div>
+        </div>
+        <span style="font-size:10px;color:#6366f1">${regoBarW}% rego</span>
+        <span style="font-size:10px;color:#475569">·</span>
+        <span style="font-size:10px;color:#06b6d4">${100 - regoBarW}% re-eng</span>
+      </div>
+    </div>
+    <div class="ep-divider"></div>
+    <div class="ep-section">
+      <div class="ep-title">Target Progress</div>
+      <div class="ep-metrics">
+        <div class="ep-metric">
+          <div class="ep-label">Incentive Tgt</div>
+          <div class="ep-value" style="color:#6366f1">${a.incentiveTgt}</div>
+          <div class="ep-sub">${fmt1(a.pctInc)} achieved</div>
+        </div>
+        <div class="ep-metric">
+          <div class="ep-label">Start Tgt</div>
+          <div class="ep-value" style="color:#94a3b8">${a.startTgt}</div>
+          <div class="ep-sub">${fmt1(a.pctStart)} achieved</div>
+        </div>
+        <div class="ep-metric">
+          <div class="ep-label">Pool Conv.</div>
+          <div class="ep-value" style="color:${ragCCC(a.ccc)}">${fmt1(a.ccc)}</div>
+          <div class="ep-sub">${a.current} of ${a.pool} eligible</div>
+        </div>
+      </div>
+      ${convDetail}
+    </div>
+    ${tlSection}`;
+}
+
+// ─── ROW EXPAND ──────────────────────────────────────────────────────────────
+function toggleRow(name) {
+  expandedRow = expandedRow === name ? null : name;
+  renderTable();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderKPIs();
+renderPartners();
+renderFilters();
+renderTable();
+</script>
+</body>
+</html>
