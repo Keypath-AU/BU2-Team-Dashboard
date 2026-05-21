@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BU2 Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh}
+.nav{background:#161b27;border-bottom:1px solid #1e2d45;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-brand{font-size:20px;font-weight:800;color:#6366f1;letter-spacing:-0.5px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.date-chip{background:#1e2d45;padding:5px 12px;border-radius:6px;font-size:12px;color:#64748b}
+.upload-btn{background:#1e2d45;border:1px solid #2d3f5e;color:#94a3b8;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;transition:all .2s}
+.upload-btn:hover{background:#2d3f5e;color:#e2e8f0}
+.breadcrumb{padding:12px 24px;font-size:13px;display:flex;align-items:center;gap:8px;color:#475569}
+.bc-link{cursor:pointer;color:#475569;transition:color .15s}.bc-link:hover{color:#94a3b8}
+.bc-cur{color:#94a3b8;font-weight:600}
+.bc-sep{color:#2d3f5e}
+.view{display:none;padding:0 24px 32px}.view.active{display:block}
+.section-hd{margin-bottom:20px}
+.section-title{font-size:18px;font-weight:700;color:#e2e8f0}
+.section-sub{font-size:12px;color:#475569;margin-top:3px}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c-att::before{background:#6366f1}
+.kpi-card.c-con::before{background:#06b6d4}
+.kpi-card.c-t1::before{background:#f59e0b}
+.kpi-card.c-urg1::before{background:#10b981}
+.kpi-card.c-urg2::before{background:#f43f5e}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:8px}
+.kpi-value{font-size:36px;font-weight:800;line-height:1;color:#e2e8f0}
+.kpi-value span{font-size:20px;color:#64748b}
+.kpi-sub{font-size:11px;color:#475569;margin-top:6px}
+.kpi-bar{height:4px;background:#1e2d45;border-radius:2px;margin-top:12px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .6s}
+.c-att .kpi-bar-fill{background:#6366f1}.c-con .kpi-bar-fill{background:#06b6d4}.c-t1 .kpi-bar-fill{background:#f59e0b}
+.c-urg1 .kpi-bar-fill{background:#10b981}.c-urg2 .kpi-bar-fill{background:#f43f5e}
+.partner-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.pcard{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:20px;cursor:pointer;transition:all .2s}
+.pcard:hover{border-color:#6366f1;transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,.15)}
+.pcard-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pcard-name{font-size:14px;font-weight:700;color:#e2e8f0}
+.pcard-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pb-ecu{background:#312e81;color:#a5b4fc}.pb-vu{background:#0c4a6e;color:#7dd3fc}.pb-uc{background:#064e3b;color:#6ee7b7}
+.pcard-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.pm-label{font-size:10px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.pm-value{font-size:22px;font-weight:800;color:#e2e8f0}
+.pm-value.good{color:#10b981}.pm-value.warn{color:#f59e0b}.pm-value.bad{color:#f43f5e}
+.pcard-footer{margin-top:14px;padding-top:12px;border-top:1px solid #1e2d45;font-size:11px;color:#475569;display:flex;justify-content:space-between}
+.lb-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.lb-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:16px;overflow:hidden}
+.lb-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center}
+.lb-title.c-att{color:#6366f1}.lb-title.c-con{color:#06b6d4}.lb-title.c-t1{color:#f59e0b}.lb-title.c-urg1{color:#10b981}.lb-title.c-urg2{color:#f43f5e}
+.lb-row{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #1e2d45;gap:6px}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-size:11px;font-weight:700;color:#2d3f5e;width:16px;flex-shrink:0;text-align:right}
+.lb-rank.r1{color:#fbbf24}.lb-rank.r2{color:#94a3b8}.lb-rank.r3{color:#b45309}
+.lb-name{font-size:12px;font-weight:600;color:#94a3b8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-pct{font-size:13px;font-weight:800;color:#e2e8f0;flex-shrink:0;text-align:right;min-width:52px;white-space:nowrap}
+.lb-partner{font-size:10px;padding:1px 0;border-radius:3px;font-weight:700;text-align:center;display:block;overflow:hidden}
+.lb-right{display:grid;grid-template-columns:34px 1fr;gap:6px;align-items:center;flex-shrink:0;min-width:105px}
+.lb-right .lb-pct{text-align:right;white-space:nowrap}
+.lbp-ECU{background:#312e81;color:#a5b4fc}.lbp-VU{background:#0c4a6e;color:#7dd3fc}.lbp-UC{background:#064e3b;color:#6ee7b7}
+.chart-row{display:grid;gap:14px;margin-bottom:20px}
+.chart-row.c2{grid-template-columns:1fr 1fr}.chart-row.c3{grid-template-columns:2fr 1fr 1fr}
+.chart-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:18px}
+.chart-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#475569;margin-bottom:14px}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.adv-tile{background:#161b27;border:1px solid #1e2d45;border-left:4px solid #2d3f5e;border-radius:8px;padding:16px;cursor:pointer;transition:all .15s;position:relative}
+.adv-tile:hover{border-color:#6366f1;transform:translateY(-1px);box-shadow:0 4px 16px rgba(99,102,241,.15)}
+.adv-tile.g{border-left-color:#10b981}.adv-tile.a{border-left-color:#f59e0b}.adv-tile.r{border-left-color:#f43f5e}
+.adv-name{font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:12px;padding-right:20px;line-height:1.3}
+.adv-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.am-label{font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;margin-bottom:2px}
+.am-value{font-size:16px;font-weight:800;color:#e2e8f0}
+.rag-dot{width:8px;height:8px;border-radius:50%;position:absolute;top:14px;right:14px}
+.rag-dot.g{background:#10b981}.rag-dot.a{background:#f59e0b}.rag-dot.r{background:#f43f5e;box-shadow:0 0 6px rgba(244,63,94,.5)}
+.adv-hd{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:22px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.adv-hd-left .adv-hd-name{font-size:22px;font-weight:800;color:#e2e8f0}
+.adv-hd-left .adv-hd-partner{font-size:13px;color:#475569;margin-top:3px}
+.adv-hd-kpis{display:flex;gap:24px;align-items:center}
+.ahk{text-align:center}
+.ahk-value{font-size:26px;font-weight:800}
+.ahk-label{font-size:10px;color:#475569;font-weight:700;text-transform:uppercase;margin-top:2px}
+.rag-pill{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700}
+.rag-pill.g{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.rag-pill.a{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
+.rag-pill.r{background:rgba(244,63,94,.15);color:#f43f5e;border:1px solid rgba(244,63,94,.3)}
+.tbl-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tbtn{padding:5px 12px;border-radius:20px;border:1px solid #1e2d45;background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:#64748b;transition:all .15s}
+.tbtn:hover{border-color:#475569;color:#94a3b8}
+.tbtn.act{background:#6366f1;color:white;border-color:#6366f1}
+.tbtn .tc{background:rgba(255,255,255,.2);border-radius:8px;padding:1px 6px;font-size:10px;margin-left:4px}
+.tbl-wrap{background:#161b27;border:1px solid #1e2d45;border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:#0d1117;padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#475569;border-bottom:1px solid #1e2d45;cursor:pointer;white-space:nowrap}
+thead th:hover{color:#94a3b8}
+tbody tr{border-bottom:1px solid #0d1117;transition:background .1s}
+tbody tr:hover{background:#0d1117}
+tbody td{padding:9px 12px;color:#94a3b8;vertical-align:middle}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.be{background:rgba(16,185,129,.15);color:#10b981}.bna{background:#1e2d45;color:#475569}.bl{background:rgba(245,158,11,.15);color:#f59e0b}
+.biy{background:rgba(16,185,129,.15);color:#10b981}.bin{background:rgba(244,63,94,.15);color:#f43f5e}.biu{background:rgba(245,158,11,.15);color:#f59e0b}.bix{background:#1e2d45;color:#475569}
+.cpill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.cp07{background:rgba(16,185,129,.2);color:#10b981}.cp814{background:rgba(16,185,129,.15);color:#10b981}.cp1530{background:rgba(245,158,11,.15);color:#f59e0b}
+.cp3160{background:rgba(251,146,60,.15);color:#fb923c}.cp60{background:rgba(244,63,94,.15);color:#f43f5e}.cpnev{background:#1e2d45;color:#475569;font-style:italic}
+.rflags{display:flex;gap:3px;flex-wrap:wrap}
+.rf{width:18px;height:18px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.rf-aw{background:rgba(244,63,94,.2);color:#f43f5e}.rf-ac{background:rgba(99,102,241,.2);color:#818cf8}.rf-fi{background:rgba(245,158,11,.2);color:#f59e0b}
+.rf-pe{background:rgba(244,63,94,.15);color:#fb7185}.rf-te{background:rgba(6,182,212,.2);color:#22d3ee}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid #1e2d45;font-size:12px;color:#475569}
+.pbtns{display:flex;gap:3px}
+.pbtn{padding:3px 9px;border-radius:4px;border:1px solid #1e2d45;background:transparent;font-size:11px;cursor:pointer;color:#64748b}
+.pbtn:hover{background:#1e2d45}.pbtn.act{background:#6366f1;color:white;border-color:#6366f1}
+.no-data{padding:32px;text-align:center;color:#475569;font-size:13px}
+.warnings{margin-bottom:20px}
+.warn-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#f43f5e;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.warn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.warn-item{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2);border-radius:6px;padding:10px 14px;font-size:12px}
+.warn-item strong{color:#f43f5e;display:block;margin-bottom:2px}.warn-item span{color:#94a3b8}
+.partner-rank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.pr-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:14px 12px;overflow:hidden}
+.pr-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px}
+.pr-title.c-att{color:#6366f1}.pr-title.c-con{color:#06b6d4}.pr-title.c-t1{color:#f59e0b}.pr-title.c-urg1{color:#10b981}.pr-title.c-urg2{color:#f43f5e}
+.pr-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e2d45;gap:8px;cursor:pointer;transition:background .1s}
+.pr-row:last-child{border-bottom:none}.pr-row:hover{background:rgba(255,255,255,.03)}
+.pr-left{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.pr-rank{font-size:13px;font-weight:700;width:14px;color:#475569}.pr-rank.r1{color:#fbbf24}
+.pr-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.pr-badge.b-ecu{background:#312e81;color:#a5b4fc}.pr-badge.b-vu{background:#0c4a6e;color:#7dd3fc}.pr-badge.b-uc{background:#064e3b;color:#6ee7b7}
+.pr-right{text-align:right}
+.pr-pct{font-size:18px;font-weight:800}
+.pr-bar{height:2px;background:#1e2d45;border-radius:1px;margin-top:4px;width:56px;margin-left:auto;overflow:hidden}
+.pr-bar-fill{height:100%;border-radius:1px}
+.lb-expand{width:100%;margin-top:8px;padding:5px 0;background:transparent;border:none;border-top:1px solid #1e2d45;color:#475569;font-size:11px;font-weight:600;cursor:pointer;text-align:center;letter-spacing:.4px;transition:color .15s}
+.lb-expand:hover{color:#94a3b8}
+.lb-hidden{display:none}
+.period-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.period-btn{padding:5px 14px;border-radius:6px;border:1px solid #10b981;background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:#10b981;transition:all .15s;white-space:nowrap}
+.period-btn:hover{background:rgba(16,185,129,0.12)}
+.period-btn.act{background:#10b981;color:#0d1117}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}.lb-grid{grid-template-columns:repeat(2,1fr)}.partner-row{grid-template-columns:1fr}.chart-row.c2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div style="display:flex;align-items:center;gap:20px">
+    <div class="nav-brand">BU2</div>
+    <div id="breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:13px"></div>
+  </div>
+  <div class="nav-right">
+    <div class="date-chip" id="dateChip">20 May 2026</div>
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">&#8593; Upload new file</button>
+    <input type="file" id="fileInput" style="display:none" accept=".xlsx">
+  </div>
+</div>
+
+<!-- BU2 VIEW -->
+<div class="view active" id="view-bu2">
+  <div style="height:16px"></div>
+  <div style="padding:0 24px">
+    <div class="section-hd">
+      <div class="section-title">BU2 &mdash; Team Dashboard</div>
+      <div class="section-sub" id="bu2-sub">Loading&hellip;</div>
+    </div>
+    <div class="partner-rank-grid" id="partner-rank"></div>
+    <div class="lb-grid" style="grid-template-columns:repeat(4,1fr)" id="lb-enrolment"></div>
+    <div style="margin-bottom:8px;margin-top:4px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#ffffff;margin-bottom:10px">
+        Phone Activity
+        <span style="font-weight:400;color:#475569;margin-left:10px;text-transform:none;letter-spacing:0">
+          &middot; Updated <span id="last-updated-ts"></span>
+        </span>
+      </div>
+      <div class="period-bar">
+        <button class="period-btn" data-period="full" onclick="setPeriod('full')">Full Period (27 Mar &ndash; 20 May)</button>
+        <button class="period-btn act" data-period="week" onclick="setPeriod('week')">This Week (Mon 18 &ndash; Wed 20 May)</button>
+        <button class="period-btn" data-period="today" onclick="setPeriod('today')">Today (Wed 20 May)</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px" id="week-partner-stats"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+        <div class="lb-card">
+          <div class="lb-title" style="color:#06b6d4">Most contacted students (STS)</div>
+          <div id="lb-sts"></div>
+        </div>
+        <div class="lb-card">
+          <div class="lb-title" style="color:#10b981">Best call conversion</div>
+          <div id="lb-conv"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTNER VIEW -->
+<div class="view" id="view-partner">
+  <div style="height:16px"></div>
+  <div style="padding:0 24px">
+    <div class="section-hd">
+      <div class="section-title" id="p-title">Partner</div>
+      <div class="section-sub" id="p-sub"></div>
+    </div>
+    <div class="kpi-row" id="p-kpis"></div>
+    <div style="margin-bottom:10px;font-size:11px;color:#475569;display:flex;align-items:center;gap:16px">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:4px"></span>On Track</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:4px"></span>Monitor</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f43f5e;margin-right:4px"></span>Needs Attention</span>
+    </div>
+    <div class="adv-grid" id="p-adv-grid"></div>
+    <div class="lb-grid" id="p-lb-grid"></div>
+  </div>
+</div>
+
+<!-- ADVISOR VIEW -->
+<div class="view" id="view-advisor">
+  <div style="height:16px"></div>
+  <div style="padding:0 24px">
+    <div class="adv-hd" id="adv-hd"></div>
+    <div class="chart-row c2" style="margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title">Contact Recency</div>
+        <div style="height:180px"><canvas id="ch-adv-recency"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Key KPIs vs BU2 Average</div>
+        <div style="height:180px"><canvas id="ch-adv-kpi"></canvas></div>
+      </div>
+    </div>
+    <div class="tbl-controls" id="tbl-controls"></div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th onclick="sortTbl('name')">Student <span id="s-name"></span></th>
+        <th onclick="sortTbl('program')">Program <span id="s-prog"></span></th>
+        <th>Status</th><th>Next Term</th><th>Intent</th>
+        <th onclick="sortTbl('days')">Last Contact <span id="s-days"></span></th>
+        <th>Risks</th><th>Notes</th>
+      </tr></thead>
+      <tbody id="tbl-body"></tbody></table>
+      <div class="pagination" id="tbl-pag"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = {"advisors":{"Katina Astles":{"calls":42,"sts":27,"conversion":64.3,"name":"Katina Astles","partner":"ECU"},"Lily Graciano":{"calls":28,"sts":19,"conversion":67.9,"name":"Lily Graciano","partner":"ECU"},"Mia Yourn":{"calls":37,"sts":21,"conversion":56.8,"name":"Mia Yourn","partner":"ECU"},"Nequila Vincent":{"calls":56,"sts":26,"conversion":46.4,"name":"Nequila Vincent","partner":"ECU"},"Nova Brownlie":{"calls":55,"sts":21,"conversion":38.2,"name":"Nova Brownlie","partner":"ECU"},"Sofie Katsipodas":{"calls":47,"sts":25,"conversion":53.2,"name":"Sofie Katsipodas","partner":"ECU"},"Aisha Bowie":{"calls":21,"sts":11,"conversion":52.4,"name":"Aisha Bowie","partner":"VU"},"Annaliese Giegerl":{"calls":52,"sts":30,"conversion":57.7,"name":"Annaliese Giegerl","partner":"VU"},"Bronwyn Testa":{"calls":22,"sts":13,"conversion":59.1,"name":"Bronwyn Testa","partner":"VU"},"Karen Price":{"calls":34,"sts":16,"conversion":47.1,"name":"Karen Price","partner":"VU"},"Mary Hammoud":{"calls":51,"sts":24,"conversion":47.1,"name":"Mary Hammoud","partner":"VU"},"Bianca Ceinar":{"calls":75,"sts":35,"conversion":46.7,"name":"Bianca Ceinar","partner":"UC"},"Bo Plicharoensuk":{"calls":93,"sts":58,"conversion":62.4,"name":"Bo Plicharoensuk","partner":"UC"},"Jesse Smith":{"calls":61,"sts":43,"conversion":70.5,"name":"Jesse Smith","partner":"UC"},"Khushboo Italiya":{"calls":102,"sts":55,"conversion":53.9,"name":"Khushboo Italiya","partner":"UC"},"Mignionne Fernandes":{"calls":62,"sts":36,"conversion":58.1,"name":"Mignionne Fernandes","partner":"UC"},"Rhea Kapoor":{"calls":34,"sts":22,"conversion":64.7,"name":"Rhea Kapoor","partner":"UC"}},"partner_totals":{"ECU":{"calls":265,"sts":139,"partner":"ECU","conversion":52.5},"VU":{"calls":180,"sts":94,"partner":"VU","conversion":52.2},"UC":{"calls":427,"sts":249,"partner":"UC","conversion":58.3},"BU2":{"calls":872,"sts":482,"conversion":55.3,"partner":"BU2"}},"week_label":"W/E 21 May 2026","last_updated":"21 May 2026, 3:03 PM"};
+const PA = {"full":{"advisors":{"Katina Astles":{"calls":561,"sts":304,"conversion":54.2,"name":"Katina Astles","partner":"ECU"},"Lily Graciano":{"calls":434,"sts":202,"conversion":46.5,"name":"Lily Graciano","partner":"ECU"},"Mia Yourn":{"calls":424,"sts":222,"conversion":52.4,"name":"Mia Yourn","partner":"ECU"},"Nequila Vincent":{"calls":511,"sts":261,"conversion":51.1,"name":"Nequila Vincent","partner":"ECU"},"Nova Brownlie":{"calls":499,"sts":227,"conversion":45.5,"name":"Nova Brownlie","partner":"ECU"},"Sofie Katsipodas":{"calls":512,"sts":265,"conversion":51.8,"name":"Sofie Katsipodas","partner":"ECU"},"Aisha Bowie":{"calls":539,"sts":248,"conversion":46.0,"name":"Aisha Bowie","partner":"VU"},"Annaliese Giegerl":{"calls":472,"sts":227,"conversion":48.1,"name":"Annaliese Giegerl","partner":"VU"},"Bronwyn Testa":{"calls":343,"sts":201,"conversion":58.6,"name":"Bronwyn Testa","partner":"VU"},"Karen Price":{"calls":467,"sts":237,"conversion":50.7,"name":"Karen Price","partner":"VU"},"Mary Hammoud":{"calls":427,"sts":223,"conversion":52.2,"name":"Mary Hammoud","partner":"VU"},"Bianca Ceinar":{"calls":513,"sts":315,"conversion":61.4,"name":"Bianca Ceinar","partner":"UC"},"Bo Plicharoensuk":{"calls":592,"sts":369,"conversion":62.3,"name":"Bo Plicharoensuk","partner":"UC"},"Jesse Smith":{"calls":583,"sts":383,"conversion":65.7,"name":"Jesse Smith","partner":"UC"},"Khushboo Italiya":{"calls":606,"sts":357,"conversion":58.9,"name":"Khushboo Italiya","partner":"UC"},"Mignionne Fernandes":{"calls":491,"sts":310,"conversion":63.1,"name":"Mignionne Fernandes","partner":"UC"},"Rhea Kapoor":{"calls":406,"sts":279,"conversion":68.7,"name":"Rhea Kapoor","partner":"UC"}},"partners":{"ECU":{"calls":2941,"sts":1481,"partner":"ECU","conversion":50.4},"VU":{"calls":2248,"sts":1136,"partner":"VU","conversion":50.5},"UC":{"calls":3191,"sts":2013,"partner":"UC","conversion":63.1},"BU2":{"calls":8380,"sts":4630,"conversion":55.3,"partner":"BU2"}}},"week":{"advisors":{"Katina Astles":{"calls":42,"sts":27,"conversion":64.3,"name":"Katina Astles","partner":"ECU"},"Lily Graciano":{"calls":28,"sts":19,"conversion":67.9,"name":"Lily Graciano","partner":"ECU"},"Mia Yourn":{"calls":37,"sts":21,"conversion":56.8,"name":"Mia Yourn","partner":"ECU"},"Nequila Vincent":{"calls":56,"sts":26,"conversion":46.4,"name":"Nequila Vincent","partner":"ECU"},"Nova Brownlie":{"calls":55,"sts":21,"conversion":38.2,"name":"Nova Brownlie","partner":"ECU"},"Sofie Katsipodas":{"calls":47,"sts":25,"conversion":53.2,"name":"Sofie Katsipodas","partner":"ECU"},"Aisha Bowie":{"calls":21,"sts":11,"conversion":52.4,"name":"Aisha Bowie","partner":"VU"},"Annaliese Giegerl":{"calls":52,"sts":30,"conversion":57.7,"name":"Annaliese Giegerl","partner":"VU"},"Bronwyn Testa":{"calls":22,"sts":13,"conversion":59.1,"name":"Bronwyn Testa","partner":"VU"},"Karen Price":{"calls":34,"sts":16,"conversion":47.1,"name":"Karen Price","partner":"VU"},"Mary Hammoud":{"calls":51,"sts":24,"conversion":47.1,"name":"Mary Hammoud","partner":"VU"},"Bianca Ceinar":{"calls":75,"sts":35,"conversion":46.7,"name":"Bianca Ceinar","partner":"UC"},"Bo Plicharoensuk":{"calls":93,"sts":58,"conversion":62.4,"name":"Bo Plicharoensuk","partner":"UC"},"Jesse Smith":{"calls":61,"sts":43,"conversion":70.5,"name":"Jesse Smith","partner":"UC"},"Khushboo Italiya":{"calls":102,"sts":55,"conversion":53.9,"name":"Khushboo Italiya","partner":"UC"},"Mignionne Fernandes":{"calls":62,"sts":36,"conversion":58.1,"name":"Mignionne Fernandes","partner":"UC"},"Rhea Kapoor":{"calls":34,"sts":22,"conversion":64.7,"name":"Rhea Kapoor","partner":"UC"}},"partners":{"ECU":{"calls":265,"sts":139,"partner":"ECU","conversion":52.5},"VU":{"calls":180,"sts":94,"partner":"VU","conversion":52.2},"UC":{"calls":427,"sts":249,"partner":"UC","conversion":58.3},"BU2":{"calls":872,"sts":482,"conversion":55.3,"partner":"BU2"}}},"today":{"advisors":{"Katina Astles":{"calls":10,"sts":7,"conversion":70.0,"name":"Katina Astles","partner":"ECU"},"Lily Graciano":{"calls":6,"sts":5,"conversion":83.3,"name":"Lily Graciano","partner":"ECU"},"Mia Yourn":{"calls":0,"sts":0,"conversion":0,"name":"Mia Yourn","partner":"ECU"},"Nequila Vincent":{"calls":7,"sts":5,"conversion":71.4,"name":"Nequila Vincent","partner":"ECU"},"Nova Brownlie":{"calls":12,"sts":6,"conversion":50.0,"name":"Nova Brownlie","partner":"ECU"},"Sofie Katsipodas":{"calls":5,"sts":4,"conversion":80.0,"name":"Sofie Katsipodas","partner":"ECU"},"Aisha Bowie":{"calls":7,"sts":3,"conversion":42.9,"name":"Aisha Bowie","partner":"VU"},"Annaliese Giegerl":{"calls":7,"sts":4,"conversion":57.1,"name":"Annaliese Giegerl","partner":"VU"},"Bronwyn Testa":{"calls":2,"sts":0,"conversion":0.0,"name":"Bronwyn Testa","partner":"VU"},"Karen Price":{"calls":0,"sts":0,"conversion":0,"name":"Karen Price","partner":"VU"},"Mary Hammoud":{"calls":15,"sts":5,"conversion":33.3,"name":"Mary Hammoud","partner":"VU"},"Bianca Ceinar":{"calls":0,"sts":0,"conversion":0,"name":"Bianca Ceinar","partner":"UC"},"Bo Plicharoensuk":{"calls":6,"sts":4,"conversion":66.7,"name":"Bo Plicharoensuk","partner":"UC"},"Jesse Smith":{"calls":14,"sts":10,"conversion":71.4,"name":"Jesse Smith","partner":"UC"},"Khushboo Italiya":{"calls":8,"sts":6,"conversion":75.0,"name":"Khushboo Italiya","partner":"UC"},"Mignionne Fernandes":{"calls":6,"sts":4,"conversion":66.7,"name":"Mignionne Fernandes","partner":"UC"},"Rhea Kapoor":{"calls":7,"sts":6,"conversion":85.7,"name":"Rhea Kapoor","partner":"UC"}},"partners":{"ECU":{"calls":40,"sts":27,"partner":"ECU","conversion":67.5},"VU":{"calls":31,"sts":12,"partner":"VU","conversion":38.7},"UC":{"calls":41,"sts":30,"partner":"UC","conversion":73.2},"BU2":{"calls":112,"sts":69,"conversion":61.6,"partner":"BU2"}}}};
+const D = {"advisors":{"Katina Astles":{"pool":264,"att":257,"pct_att":97.3,"con":179,"pct_con":67.8,"t1":0,"t1y":0,"pct_t1":0,"urg1":35,"urg1y":35,"pct_urg1":100.0,"urg2":38,"urg2y":27,"pct_urg2":71.1,"partner":"ECU","name":"Katina Astles"},"Lily Graciano":{"pool":266,"att":253,"pct_att":95.1,"con":136,"pct_con":51.1,"t1":0,"t1y":0,"pct_t1":0,"urg1":31,"urg1y":29,"pct_urg1":93.5,"urg2":36,"urg2y":27,"pct_urg2":75.0,"partner":"ECU","name":"Lily Graciano"},"Mia Yourn":{"pool":350,"att":293,"pct_att":83.7,"con":164,"pct_con":46.9,"t1":59,"t1y":42,"pct_t1":71.2,"urg1":42,"urg1y":40,"pct_urg1":95.2,"urg2":38,"urg2y":26,"pct_urg2":68.4,"partner":"ECU","name":"Mia Yourn"},"Nequila Vincent":{"pool":354,"att":299,"pct_att":84.5,"con":160,"pct_con":45.2,"t1":70,"t1y":54,"pct_t1":77.1,"urg1":41,"urg1y":30,"pct_urg1":73.2,"urg2":35,"urg2y":28,"pct_urg2":80.0,"partner":"ECU","name":"Nequila Vincent"},"Nova Brownlie":{"pool":344,"att":274,"pct_att":79.7,"con":152,"pct_con":44.2,"t1":73,"t1y":54,"pct_t1":74.0,"urg1":26,"urg1y":24,"pct_urg1":92.3,"urg2":44,"urg2y":31,"pct_urg2":70.5,"partner":"ECU","name":"Nova Brownlie"},"Sofie Katsipodas":{"pool":346,"att":315,"pct_att":91.0,"con":160,"pct_con":46.2,"t1":67,"t1y":54,"pct_t1":80.6,"urg1":32,"urg1y":28,"pct_urg1":87.5,"urg2":43,"urg2y":34,"pct_urg2":79.1,"partner":"ECU","name":"Sofie Katsipodas"},"Aisha Bowie":{"pool":352,"att":262,"pct_att":74.4,"con":142,"pct_con":40.3,"t1":46,"t1y":35,"pct_t1":76.1,"urg1":31,"urg1y":29,"pct_urg1":93.5,"urg2":57,"urg2y":46,"pct_urg2":80.7,"partner":"VU","name":"Aisha Bowie"},"Annaliese Giegerl":{"pool":346,"att":310,"pct_att":89.6,"con":188,"pct_con":54.3,"t1":33,"t1y":30,"pct_t1":90.9,"urg1":41,"urg1y":41,"pct_urg1":100.0,"urg2":35,"urg2y":25,"pct_urg2":71.4,"partner":"VU","name":"Annaliese Giegerl"},"Bronwyn Testa":{"pool":283,"att":204,"pct_att":72.1,"con":143,"pct_con":50.5,"t1":56,"t1y":47,"pct_t1":83.9,"urg1":37,"urg1y":35,"pct_urg1":94.6,"urg2":41,"urg2y":36,"pct_urg2":87.8,"partner":"VU","name":"Bronwyn Testa"},"Karen Price":{"pool":361,"att":250,"pct_att":69.3,"con":156,"pct_con":43.2,"t1":52,"t1y":47,"pct_t1":90.4,"urg1":36,"urg1y":33,"pct_urg1":91.7,"urg2":62,"urg2y":56,"pct_urg2":90.3,"partner":"VU","name":"Karen Price"},"Mary Hammoud":{"pool":284,"att":234,"pct_att":82.4,"con":151,"pct_con":53.2,"t1":50,"t1y":49,"pct_t1":98.0,"urg1":36,"urg1y":35,"pct_urg1":97.2,"urg2":48,"urg2y":45,"pct_urg2":93.8,"partner":"VU","name":"Mary Hammoud"},"Bianca Ceinar":{"pool":355,"att":293,"pct_att":82.5,"con":193,"pct_con":54.4,"t1":49,"t1y":44,"pct_t1":89.8,"urg1":28,"urg1y":27,"pct_urg1":96.4,"urg2":29,"urg2y":24,"pct_urg2":82.8,"partner":"UC","name":"Bianca Ceinar"},"Bo Plicharoensuk":{"pool":337,"att":276,"pct_att":81.9,"con":194,"pct_con":57.6,"t1":45,"t1y":34,"pct_t1":75.6,"urg1":25,"urg1y":24,"pct_urg1":96.0,"urg2":22,"urg2y":13,"pct_urg2":59.1,"partner":"UC","name":"Bo Plicharoensuk"},"Jesse Smith":{"pool":347,"att":331,"pct_att":95.4,"con":245,"pct_con":70.6,"t1":54,"t1y":47,"pct_t1":87.0,"urg1":28,"urg1y":28,"pct_urg1":100.0,"urg2":23,"urg2y":15,"pct_urg2":65.2,"partner":"UC","name":"Jesse Smith"},"Khushboo Italiya":{"pool":344,"att":279,"pct_att":81.1,"con":173,"pct_con":50.3,"t1":48,"t1y":37,"pct_t1":77.1,"urg1":10,"urg1y":8,"pct_urg1":80.0,"urg2":26,"urg2y":22,"pct_urg2":84.6,"partner":"UC","name":"Khushboo Italiya"},"Mignionne Fernandes":{"pool":281,"att":233,"pct_att":82.9,"con":168,"pct_con":59.8,"t1":43,"t1y":38,"pct_t1":88.4,"urg1":16,"urg1y":14,"pct_urg1":87.5,"urg2":18,"urg2y":14,"pct_urg2":77.8,"partner":"UC","name":"Mignionne Fernandes"},"Rhea Kapoor":{"pool":334,"att":204,"pct_att":61.1,"con":153,"pct_con":45.8,"t1":42,"t1y":37,"pct_t1":88.1,"urg1":32,"urg1y":31,"pct_urg1":96.9,"urg2":20,"urg2y":19,"pct_urg2":95.0,"partner":"UC","name":"Rhea Kapoor"}},"partner_totals":{"ECU":{"pool":1924,"att":1691,"pct_att":87.9,"con":951,"pct_con":49.4,"t1":269,"t1y":204,"pct_t1":75.8,"urg1":207,"urg1y":186,"pct_urg1":89.9,"urg2":234,"urg2y":173,"pct_urg2":73.9,"partner":"ECU"},"VU":{"pool":1626,"att":1260,"pct_att":77.5,"con":780,"pct_con":48.0,"t1":237,"t1y":208,"pct_t1":87.8,"urg1":181,"urg1y":173,"pct_urg1":95.6,"urg2":243,"urg2y":208,"pct_urg2":85.6,"partner":"VU"},"UC":{"pool":1998,"att":1616,"pct_att":80.9,"con":1126,"pct_con":56.4,"t1":281,"t1y":237,"pct_t1":84.3,"urg1":139,"urg1y":132,"pct_urg1":95.0,"urg2":138,"urg2y":107,"pct_urg2":77.5,"partner":"UC"},"BU2":{"pool":5548,"att":4567,"pct_att":82.3,"con":2857,"pct_con":51.5,"t1":787,"t1y":649,"pct_t1":82.5,"urg1":527,"urg1y":491,"pct_urg1":93.2,"urg2":615,"urg2y":488,"pct_urg2":79.3,"partner":"BU2"}}};
+
+// DATA — injected by build step
+// W, PA, D defined below in HTML
+
+let S = { view:'bu2', partner:null, advisor:null, filter:'all', page:1, pageSize:50, sort:null, sortDir:1, charts:{}, phonePeriod:'week' };
+
+const PARTNERS = {
+  ECU:{label:'Edith Cowan University',full:'Edith Cowan University - Online',badgeCls:'pb-ecu',lbCls:'lbp-ECU'},
+  VU: {label:'Victoria University',   full:'Victoria University - Online',   badgeCls:'pb-vu', lbCls:'lbp-VU'},
+  UC: {label:'University of Canberra',full:'University of Canberra - Online',badgeCls:'pb-uc', lbCls:'lbp-UC'},
+};
+
+function advs(partner){ return Object.values(D.advisors).filter(function(a){ return !partner||a.partner===partner; }); }
+function col(v,lo,hi){ if(lo===undefined)lo=50; if(hi===undefined)hi=75; return v===null?'#64748b':v>=hi?'#10b981':v>=lo?'#f59e0b':'#f43f5e'; }
+function dc(id){ if(S.charts[id]){S.charts[id].destroy();delete S.charts[id];} }
+
+/* ── BREADCRUMB ── */
+function setBreadcrumb(){
+  var el = document.getElementById('breadcrumb');
+  if(S.view==='bu2'){
+    el.innerHTML='<span class="bc-cur">Overview</span>';
+  } else if(S.view==='partner'){
+    el.innerHTML='<span class="bc-link" onclick="navBU2()">Overview</span>'
+      +'<span class="bc-sep">&#8250;</span>'
+      +'<span class="bc-cur">'+S.partner+'</span>';
+  } else {
+    var adv=(S.advisor||'').split(' ').slice(0,2).join(' ');
+    el.innerHTML='<span class="bc-link" onclick="navBU2()">Overview</span>'
+      +'<span class="bc-sep">&#8250;</span>'
+      +'<span class="bc-link" onclick="navPartner(this.getAttribute(\'data-p\'))" data-p="'+S.partner+'">'+S.partner+'</span>'
+      +'<span class="bc-sep">&#8250;</span>'
+      +'<span class="bc-cur">'+adv+'</span>';
+  }
+}
+function showView(v){ document.querySelectorAll('.view').forEach(function(x){x.classList.remove('active');}); document.getElementById('view-'+v).classList.add('active'); S.view=v; setBreadcrumb(); }
+function navBU2(){ S.partner=null;S.advisor=null;showView('bu2'); }
+function navPartner(p){ S.partner=p;S.advisor=null;renderPartner(p);showView('partner'); }
+function navAdvisor(name){ S.advisor=name;S.partner=D.advisors[name].partner;S.filter='all';S.page=1;S.sort=null;renderAdvisor(name);showView('advisor'); }
+
+/* ── KPI CARD ── */
+function kpiCard(cls,label,value,n,d,sub){
+  var w=d?Math.round(value||0):0, c=col(value);
+  return '<div class="kpi-card '+cls+'"><div class="kpi-label">'+label+'</div>'
+    +'<div class="kpi-value" style="color:'+c+'">'+(value!==null?value:'&mdash;')+'<span>%</span></div>'
+    +'<div class="kpi-sub">'+n+' of '+d+' '+sub+'</div>'
+    +'<div class="kpi-bar"><div class="kpi-bar-fill" style="width:'+Math.min(w,100)+'%"></div></div></div>';
+}
+
+/* ── LEADERBOARD ── */
+var _lbId=0;
+function lb(title,cls,field,allAdvs){
+  var sorted=allAdvs.filter(function(a){return a[field]!==null&&a[field]>0;}).sort(function(a,b){return b[field]-a[field];});
+  var id='lb-'+(++_lbId);
+  var rows=sorted.map(function(a,i){
+    var rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
+    var hidden=i>=6?' class="lb-hidden"':'';
+    var pInfo=PARTNERS[a.partner]||{};
+    return '<div'+hidden+' data-lb="'+id+'">'
+      +'<div class="lb-row">'
+      +'<div class="lb-rank '+rankCls+'">'+(i+1)+'</div>'
+      +'<div class="lb-name" title="'+a.name+'">'+a.name.split(' ')[0]+' '+(a.name.split(' ')[1]||'')+'</div>'
+      +'<div class="lb-right"><span class="lb-partner '+(pInfo.lbCls||'')+'">'+a.partner+'</span>'
+      +'<div class="lb-pct" style="color:'+col(a[field])+'">'+a[field]+'%</div></div>'
+      +'</div></div>';
+  }).join('');
+  var extra=sorted.length-6;
+  var toggle=extra>0
+    ?'<button class="lb-expand" id="btn-'+id+'" data-id="'+id+'" data-extra="'+extra+'" data-showing="0" onclick="toggleLb(this)">&#9662; Show all '+sorted.length+'</button>'
+    :'';
+  return '<div class="lb-card"><div class="lb-title '+cls+'">'+title+'</div>'+(rows||'<div class="no-data">No data</div>')+toggle+'</div>';
+}
+function toggleLb(btn){
+  var id=btn.getAttribute('data-id');
+  var extra=parseInt(btn.getAttribute('data-extra'));
+  var showing=btn.getAttribute('data-showing')==='1';
+  document.querySelectorAll('[data-lb="'+id+'"]').forEach(function(r,i){
+    if(!showing){ r.classList.remove('lb-hidden'); }
+    else if(i>=6){ r.classList.add('lb-hidden'); }
+  });
+  btn.innerHTML=showing?'&#9662; Show all '+(6+extra):'&#9652; Show less';
+  btn.setAttribute('data-showing',showing?'0':'1');
+}
+
+/* ── BU2 VIEW ── */
+function renderBU2(){
+  var pt=D.partner_totals, b=pt.BU2, all=advs();
+  document.getElementById('bu2-sub').textContent=b.pool.toLocaleString()+' eligible students · 17 advisors · ECU / VU / UC · Period: 27 Mar – 20 May 2026';
+
+  var prMetrics=[
+    {field:'pct_att', cls:'c-att', label:'% Attempted',   barCol:'#6366f1',lo:70,hi:85},
+    {field:'pct_con', cls:'c-con', label:'% Contacted',   barCol:'#06b6d4',lo:45,hi:60},
+    {field:'pct_t1',  cls:'c-t1',  label:'T1 Enrolled',   barCol:'#f59e0b',lo:75,hi:90},
+    {field:'pct_urg1',cls:'c-urg1',label:'URG1 Enrolled', barCol:'#10b981',lo:80,hi:95},
+    {field:'pct_urg2',cls:'c-urg2',label:'URG2 Enrolled', barCol:'#e11d48',lo:75,hi:90},
+  ];
+  var prBadge={ECU:'b-ecu',VU:'b-vu',UC:'b-uc'};
+  document.getElementById('partner-rank').innerHTML=prMetrics.map(function(m){
+    var ranked=['ECU','VU','UC'].map(function(p){return {p:p,val:pt[p][m.field]};}).sort(function(a,b){return b.val-a.val;});
+    var rows=ranked.map(function(r,i){
+      return '<div class="pr-row" onclick="navPartner(this.getAttribute(\'data-p\'))" data-p="'+r.p+'">'
+        +'<div class="pr-left"><div class="pr-rank '+(i===0?'r1':'')+'">'+(i+1)+'</div>'
+        +'<span class="pr-badge '+prBadge[r.p]+'">'+r.p+'</span></div>'
+        +'<div class="pr-right"><div class="pr-pct" style="color:'+col(r.val,m.lo,m.hi)+'">'+r.val+'%</div>'
+        +'<div class="pr-bar"><div class="pr-bar-fill" style="width:'+Math.min(r.val,100)+'%;background:'+m.barCol+'"></div></div></div></div>';
+    }).join('');
+    return '<div class="pr-card"><div class="pr-title '+m.cls+'">'+m.label+'</div>'+rows+'</div>';
+  }).join('');
+
+  document.getElementById('lb-enrolment').innerHTML=
+    lb('% Contacted','c-con','pct_con',all)+
+    lb('T1 Enrolled %','c-t1','pct_t1',all)+
+    lb('URG1 Enrolled %','c-urg1','pct_urg1',all)+
+    lb('URG2 Enrolled %','c-urg2','pct_urg2',all);
+}
+
+/* ── PARTNER VIEW ── */
+function renderPartner(p){
+  var pi=PARTNERS[p], t=D.partner_totals[p], all=advs(p);
+  document.getElementById('p-title').textContent=pi.label;
+  document.getElementById('p-sub').textContent=all.length+' advisors · '+t.pool+' eligible students · Period: 27 Mar – 20 May 2026';
+  document.getElementById('p-kpis').innerHTML=
+    kpiCard('c-att','% Attempted',t.pct_att,t.att,t.pool,'students')+
+    kpiCard('c-con','% Contacted',t.pct_con,t.con,t.pool,'students')+
+    kpiCard('c-t1','T1 Enrolled',t.pct_t1,t.t1y,t.t1,'T1 students')+
+    kpiCard('c-urg1','URG1 Enrolled',t.pct_urg1,t.urg1y,t.urg1,'URG1')+
+    kpiCard('c-urg2','URG2 Enrolled',t.pct_urg2,t.urg2y,t.urg2,'URG2');
+  var ragOf=function(a){ var avg=(a.pct_att||0)+(a.pct_con||0)+(a.pct_t1||0)+(a.pct_urg1||0)+(a.pct_urg2||0); return avg>=400?'g':avg>=300?'a':'r'; };
+  document.getElementById('p-adv-grid').innerHTML=all.slice().sort(function(a,b){var o={r:0,a:1,g:2};return o[ragOf(a)]-o[ragOf(b)];}).map(function(a){
+    var rag=ragOf(a);
+    return '<div class="adv-tile '+rag+'" onclick="navAdvisor(this.getAttribute(\'data-n\'))" data-n="'+a.name+'">'
+      +'<div class="rag-dot '+rag+'"></div><div class="adv-name">'+a.name+'</div>'
+      +'<div class="adv-metrics">'
+      +'<div><div class="am-label">Att%</div><div class="am-value" style="color:'+col(a.pct_att)+'">'+(a.pct_att!=null?a.pct_att:'&mdash;')+'</div></div>'
+      +'<div><div class="am-label">Con%</div><div class="am-value" style="color:'+col(a.pct_con)+'">'+(a.pct_con!=null?a.pct_con:'&mdash;')+'</div></div>'
+      +'<div><div class="am-label">T1%</div><div class="am-value" style="color:'+col(a.pct_t1,75,90)+'">'+(a.pct_t1!=null?a.pct_t1:'&mdash;')+'</div></div>'
+      +'<div><div class="am-label">URG1%</div><div class="am-value" style="color:'+col(a.pct_urg1,80,95)+'">'+(a.pct_urg1!=null?a.pct_urg1:'&mdash;')+'</div></div>'
+      +'<div><div class="am-label">URG2%</div><div class="am-value" style="color:'+col(a.pct_urg2,75,90)+'">'+(a.pct_urg2!=null?a.pct_urg2:'&mdash;')+'</div></div>'
+      +'<div><div class="am-label">Pool</div><div class="am-value">'+a.pool+'</div></div>'
+      +'</div></div>';
+  }).join('');
+  document.getElementById('p-lb-grid').innerHTML=
+    lb('% Attempted','c-att','pct_att',all)+
+    lb('% Contacted','c-con','pct_con',all)+
+    lb('T1 Enrolled %','c-t1','pct_t1',all)+
+    lb('URG1 Enrolled %','c-urg1','pct_urg1',all)+
+    lb('URG2 Enrolled %','c-urg2','pct_urg2',all);
+}
+
+/* ── ADVISOR VIEW ── */
+function renderAdvisor(name){
+  var a=D.advisors[name], students=(D.students&&D.students[name])||[], b=D.partner_totals.BU2;
+  var ragOf=function(x){ var avg=(x.pct_att||0)+(x.pct_con||0)+(x.pct_t1||0)+(x.pct_urg1||0)+(x.pct_urg2||0); return avg>=400?'g':avg>=300?'a':'r'; };
+  var rag=ragOf(a);
+  var ragLabel={g:'&#10003; On Track',a:'&#9889; Monitor',r:'&#9888; Attention'}[rag];
+  document.getElementById('adv-hd').innerHTML=
+    '<div class="adv-hd-left"><div class="adv-hd-name">'+a.name+'</div>'
+    +'<div class="adv-hd-partner">'+(PARTNERS[a.partner]?PARTNERS[a.partner].label:a.partner)+' · '+a.pool+' eligible students</div></div>'
+    +'<div class="adv-hd-kpis">'
+    +'<div class="ahk"><div class="ahk-value" style="color:'+col(a.pct_att)+'">'+(a.pct_att!=null?a.pct_att:'&mdash;')+'%</div><div class="ahk-label">Attempted</div></div>'
+    +'<div class="ahk"><div class="ahk-value" style="color:'+col(a.pct_con)+'">'+(a.pct_con!=null?a.pct_con:'&mdash;')+'%</div><div class="ahk-label">Contacted</div></div>'
+    +'<div class="ahk"><div class="ahk-value" style="color:'+col(a.pct_t1,75,90)+'">'+(a.pct_t1!=null?a.pct_t1:'&mdash;')+'%</div><div class="ahk-label">T1 Enrolled</div></div>'
+    +'<div class="ahk"><div class="ahk-value" style="color:'+col(a.pct_urg1,80,95)+'">'+(a.pct_urg1!=null?a.pct_urg1:'&mdash;')+'%</div><div class="ahk-label">URG1 Enrolled</div></div>'
+    +'<div class="ahk"><div class="ahk-value" style="color:'+col(a.pct_urg2,75,90)+'">'+(a.pct_urg2!=null?a.pct_urg2:'&mdash;')+'%</div><div class="ahk-label">URG2 Enrolled</div></div>'
+    +'<div class="rag-pill '+rag+'">'+ragLabel+'</div></div>';
+  renderTable(students);
+}
+
+/* ── STUDENT TABLE ── */
+function renderTable(allS){
+  var enrolled=allS.filter(function(s){return s.status==='Enrolled';});
+  var atRisk=allS.filter(function(s){return s.r_aw||s.r_ac||s.r_fi||s.r_pe;});
+  var noContact=allS.filter(function(s){return s.bucket==='Never'||s.bucket==='60+d';});
+  var nextWD=allS.filter(function(s){return s.next_term==='Withdrawn';});
+  var intNo=allS.filter(function(s){return s.intent==='No'||s.intent==='Pending Withdrawn';});
+  var filters=[
+    {id:'all',label:'All',n:allS.length},
+    {id:'enrolled',label:'Enrolled',n:enrolled.length},
+    {id:'at-risk',label:'&#9888; At Risk',n:atRisk.length},
+    {id:'no-contact',label:'No Recent Contact',n:noContact.length},
+    {id:'next-wd',label:'Withdrawing',n:nextWD.length},
+    {id:'intent-no',label:'Intent: No',n:intNo.length}
+  ];
+  document.getElementById('tbl-controls').innerHTML=filters.map(function(f){
+    return '<button class="tbtn '+(S.filter===f.id?'act':'')+'" data-fid="'+f.id+'" onclick="setFilter(this.getAttribute(\'data-fid\'))">'+f.label+'<span class="tc">'+f.n+'</span></button>';
+  }).join('');
+  var fm={all:allS,enrolled:enrolled,'at-risk':atRisk,'no-contact':noContact,'next-wd':nextWD,'intent-no':intNo};
+  var data=fm[S.filter]||allS;
+  if(S.sort){
+    data=data.slice().sort(function(a,b){
+      var va=a[S.sort],vb=b[S.sort];
+      if(va===null||va===undefined) va=S.sortDir>0?Infinity:-Infinity;
+      if(vb===null||vb===undefined) vb=S.sortDir>0?Infinity:-Infinity;
+      return S.sortDir*(va>vb?1:va<vb?-1:0);
+    });
+  }
+  var total=data.length, pages=Math.ceil(total/S.pageSize), start=(S.page-1)*S.pageSize, pg=data.slice(start,start+S.pageSize);
+  var cpMap={'0-7d':'cp07','8-14d':'cp814','15-30d':'cp1530','31-60d':'cp3160','60+d':'cp60','Never':'cpnev'};
+  var cpL={'0-7d':'0–7d','8-14d':'8–14d','15-30d':'15–30d','31-60d':'31–60d','60+d':'60+ days','Never':'Never'};
+  var sBadge=function(s){return ({Enrolled:'<span class="badge be">Enrolled</span>','Not Active':'<span class="badge bna">Not Active</span>','Leave of Absence':'<span class="badge bl">LOA</span>'}[s])||'<span class="badge bna">'+(s||'&mdash;')+'</span>';};
+  var iBadge=function(i){return ({Yes:'<span class="badge biy">Yes</span>',No:'<span class="badge bin">No</span>',Undecided:'<span class="badge biu">Undecided</span>','Pending Withdrawn':'<span class="badge bin">Pending WD</span>'}[i])||'<span class="badge bix">'+(i||'&mdash;')+'</span>';};
+  var riskF=function(s){var f='';if(s.r_aw)f+='<span class="rf rf-aw">AW</span>';if(s.r_ac)f+='<span class="rf rf-ac">AC</span>';if(s.r_fi)f+='<span class="rf rf-fi">FI</span>';if(s.r_pe)f+='<span class="rf rf-pe">PE</span>';if(s.r_te)f+='<span class="rf rf-te">TE</span>';return f?'<div class="rflags">'+f+'</div>':'&mdash;';};
+  document.getElementById('tbl-body').innerHTML=pg.length?pg.map(function(s){
+    return '<tr>'
+      +'<td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0" title="'+(s.name||'')+'">'+(s.name||'&mdash;')+'</td>'
+      +'<td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px" title="'+(s.program||'')+'">'+(s.program||'&mdash;')+'</td>'
+      +'<td>'+sBadge(s.status)+'</td><td>'+sBadge(s.next_term)+'</td><td>'+iBadge(s.intent)+'</td>'
+      +'<td><span class="cpill '+(cpMap[s.bucket]||'cpnev')+'">'+(cpL[s.bucket]||s.bucket||'')+(s.days!=null?' · '+s.days+'d':'')+'</span></td>'
+      +'<td>'+riskF(s)+'</td>'
+      +'<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#475569" title="'+(s.notes||s.last_subj||'')+'">'+(s.notes||s.last_subj||'&mdash;')+'</td></tr>';
+  }).join(''):'<tr><td colspan="8" class="no-data">No students match this filter.</td></tr>';
+  var ph='<span>Showing '+(start+1)+'–'+Math.min(start+S.pageSize,total)+' of '+total+'</span>';
+  if(pages>1){ph+='<div class="pbtns">'+Array.from({length:Math.min(pages,10)},function(_,i){return '<button class="pbtn '+(i+1===S.page?'act':'')+'" onclick="goPage('+(i+1)+')">'+(i+1)+'</button>';}).join('')+(pages>10?'<span style="padding:3px 6px;color:#475569">…'+pages+'</span>':'')+'</div>';}
+  document.getElementById('tbl-pag').innerHTML=ph;
+}
+function setFilter(f){ S.filter=f;S.page=1;renderTable((D.students&&D.students[S.advisor])||[]); }
+function goPage(p){ S.page=p;renderTable((D.students&&D.students[S.advisor])||[]); }
+function sortTbl(f){
+  if(S.sort===f)S.sortDir*=-1;else{S.sort=f;S.sortDir=1;}
+  ['name','prog','days'].forEach(function(x){var el=document.getElementById('s-'+x);if(el)el.textContent='';});
+  var map={name:'s-name',program:'s-prog',days:'s-days'};
+  if(map[f]){var el=document.getElementById(map[f]);if(el)el.textContent=S.sortDir>0?'↑':'↓';}
+  S.page=1;renderTable((D.students&&D.students[S.advisor])||[]);
+}
+
+/* ── PHONE ACTIVITY ── */
+function setPeriod(p){
+  S.phonePeriod=p;
+  document.querySelectorAll('.period-btn').forEach(function(b){b.classList.toggle('act',b.getAttribute('data-period')===p);});
+  renderWeekly();
+}
+function renderWeekly(){
+  var data=PA[S.phonePeriod];
+  var el=document.getElementById('last-updated-ts'); if(el&&W.last_updated) el.textContent=W.last_updated;
+  document.getElementById('week-partner-stats').innerHTML=['ECU','VU','UC'].map(function(p){
+    var t=data.partners[p];
+    return '<div style="background:#161b27;border:1px solid #1e2d45;border-radius:8px;padding:12px 14px">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#475569;margin-bottom:10px;display:flex;justify-content:space-between">'
+      +'<span>'+p+'</span><span class="pr-badge b-'+p.toLowerCase()+'">'+p+'</span></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center">'
+      +'<div><div style="font-size:18px;font-weight:800;color:#e2e8f0">'+t.calls+'</div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Calls</div></div>'
+      +'<div><div style="font-size:18px;font-weight:800;color:#06b6d4">'+t.sts+'</div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">STS</div></div>'
+      +'<div><div style="font-size:18px;font-weight:800;color:'+col(t.conversion,45,65)+'">'+t.conversion+'%</div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Conv.</div></div>'
+      +'</div></div>';
+  }).join('');
+
+  function weekLb(elId,sorted,valFn){
+    var id='lb-'+(++_lbId);
+    var rows=sorted.map(function(item,i){
+      var a=item[0], d=item[1];
+      var rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'';
+      var hidden=i>=6?' class="lb-hidden"':'';
+      var pInfo=PARTNERS[d.partner]||{};
+      return '<div'+hidden+' data-lb="'+id+'">'
+        +'<div class="lb-row">'
+        +'<div class="lb-rank '+rankCls+'">'+(i+1)+'</div>'
+        +'<div class="lb-name" title="'+a+'">'+a.split(' ').slice(0,2).join(' ')+'</div>'
+        +'<div class="lb-right"><span class="lb-partner '+(pInfo.lbCls||'')+'">'+d.partner+'</span>'+valFn(d)+'</div>'
+        +'</div></div>';
+    }).join('');
+    var extra=sorted.length-6;
+    var btn=extra>0?'<button class="lb-expand" data-id="'+id+'" data-extra="'+extra+'" data-showing="0" onclick="toggleLb(this)">&#9662; Show all '+sorted.length+'</button>':'';
+    var el=document.getElementById(elId);
+    el.innerHTML=rows||'<div class="no-data">No calls recorded</div>';
+    if(btn) el.innerHTML+=btn;
+  }
+
+  var bySTS=Object.entries(data.advisors).filter(function(e){return e[1].calls>0;}).sort(function(a,b){return b[1].sts-a[1].sts;});
+  weekLb('lb-sts',bySTS,function(d){return '<div class="lb-pct" style="color:#06b6d4">'+d.sts+'<span style="font-size:10px;color:#475569;margin-left:3px">/ '+d.calls+'</span></div>';});
+  var byConv=Object.entries(data.advisors).filter(function(e){return e[1].calls>0;}).sort(function(a,b){return b[1].conversion-a[1].conversion;});
+  weekLb('lb-conv',byConv,function(d){return '<div class="lb-pct" style="color:'+col(d.conversion,45,65)+'">'+d.conversion+'%<span style="font-size:10px;color:#475569;margin-left:3px">/ '+d.calls+'</span></div>';});
+}
+
+/* ── INIT ── */
+renderBU2();
+renderWeekly();
+setBreadcrumb();
+
+</script>
+</body>
+</html>
