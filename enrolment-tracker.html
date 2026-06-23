@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BU2 · Enrolment Tracker — 22 Jun 2026</title>
+<title>BU2 · Enrolment Tracker — 23 Jun 2026</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh}
@@ -96,7 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="tl-badges">
     <span class="tl-badge">TRACKER</span>
-    <span class="tl-date">22 Jun 2026</span>
+    <span class="tl-date">23 Jun 2026</span>
   </div>
 </div>
 
@@ -130,25 +130,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 const ADVISORS_RAW = [
   // ECU
-  {name:'Nova Brownlie',       partner:'ECU', pool:255, current:177, rego:15, reEng:45, trep:60,  outsideTrep:4},
-  {name:'Mia Yourn',           partner:'ECU', pool:221, current:148, rego:7,  reEng:0,  trep:7,   outsideTrep:23},
-  {name:'Lily Graciano',       partner:'ECU', pool:227, current:154, rego:11, reEng:48, trep:59,  outsideTrep:2},
-  {name:'Katina Astles',       partner:'ECU', pool:245, current:158, rego:11, reEng:33, trep:44,  outsideTrep:15},
-  {name:'Nequila Vincent',     partner:'ECU', pool:246, current:165, rego:22, reEng:38, trep:60,  outsideTrep:9},
-  {name:'Sofie Katsipodas',    partner:'ECU', pool:254, current:185, rego:9,  reEng:29, trep:38,  outsideTrep:11},
+  {name:'Nova Brownlie',       partner:'ECU', pool:255, current:179, rego:15, reEng:43, trep:58,  outsideTrep:5},
+  {name:'Mia Yourn',           partner:'ECU', pool:221, current:154, rego:6,  reEng:0,  trep:6,   outsideTrep:21},
+  {name:'Lily Graciano',       partner:'ECU', pool:227, current:157, rego:9,  reEng:46, trep:55,  outsideTrep:2},
+  {name:'Katina Astles',       partner:'ECU', pool:245, current:160, rego:10, reEng:32, trep:42,  outsideTrep:14},
+  {name:'Nequila Vincent',     partner:'ECU', pool:246, current:171, rego:19, reEng:36, trep:55,  outsideTrep:9},
+  {name:'Sofie Katsipodas',    partner:'ECU', pool:254, current:192, rego:7,  reEng:27, trep:34,  outsideTrep:10},
   // VU
-  {name:'Aisha Bowie',         partner:'VU',  pool:323, current:246, rego:17, reEng:35, trep:52,  outsideTrep:19},
-  {name:'Annaliese Giegerl',   partner:'VU',  pool:307, current:246, rego:5,  reEng:18, trep:23,  outsideTrep:22},
-  {name:'Karen Price',         partner:'VU',  pool:332, current:287, rego:5,  reEng:27, trep:32,  outsideTrep:10},
-  {name:'Mary Hammoud',        partner:'VU',  pool:275, current:233, rego:15, reEng:18, trep:33,  outsideTrep:8},
+  {name:'Aisha Bowie',         partner:'VU',  pool:319, current:245, rego:17, reEng:32, trep:49,  outsideTrep:18},
+  {name:'Annaliese Giegerl',   partner:'VU',  pool:307, current:248, rego:4,  reEng:17, trep:21,  outsideTrep:22},
+  {name:'Karen Price',         partner:'VU',  pool:331, current:289, rego:4,  reEng:27, trep:31,  outsideTrep:9},
+  {name:'Mary Hammoud',        partner:'VU',  pool:275, current:234, rego:14, reEng:18, trep:32,  outsideTrep:8},
   // UC
-  {name:'Jesse Smith',         partner:'UC',  pool:289, current:205, rego:27, reEng:42, trep:69,  outsideTrep:14},
-  {name:'Mignionne Fernandes', partner:'UC',  pool:239, current:176, rego:29, reEng:41, trep:70,  outsideTrep:7},
-  {name:'Bo Plicharoensuk',    partner:'UC',  pool:300, current:221, rego:24, reEng:50, trep:74,  outsideTrep:19},
-  {name:'Rhea Kapoor',         partner:'UC',  pool:301, current:209, rego:34, reEng:64, trep:98,  outsideTrep:6},
-  {name:'Bianca Ceinar',       partner:'UC',  pool:299, current:226, rego:28, reEng:43, trep:71,  outsideTrep:16},
-  {name:'Khushboo Italiya',    partner:'UC',  pool:307, current:219, rego:29, reEng:59, trep:88,  outsideTrep:13},
-  {name:'David Bell',          partner:'UC',  pool:295, current:186, rego:39, reEng:83, trep:122, outsideTrep:2},
+  {name:'Jesse Smith',         partner:'UC',  pool:289, current:205, rego:27, reEng:43, trep:70,  outsideTrep:13},
+  {name:'Mignionne Fernandes', partner:'UC',  pool:239, current:175, rego:28, reEng:41, trep:69,  outsideTrep:7},
+  {name:'Bo Plicharoensuk',    partner:'UC',  pool:300, current:222, rego:23, reEng:49, trep:72,  outsideTrep:18},
+  {name:'Rhea Kapoor',         partner:'UC',  pool:301, current:210, rego:33, reEng:64, trep:97,  outsideTrep:6},
+  {name:'Bianca Ceinar',       partner:'UC',  pool:299, current:232, rego:23, reEng:42, trep:65,  outsideTrep:16},
+  {name:'Khushboo Italiya',    partner:'UC',  pool:307, current:228, rego:23, reEng:59, trep:82,  outsideTrep:11},
+  {name:'David Bell',          partner:'UC',  pool:294, current:188, rego:37, reEng:83, trep:120, outsideTrep:2},
 ];
 
 const PARTNER_META = {
