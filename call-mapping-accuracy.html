@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Call Mapping Accuracy — 26 June 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f5f7; color: #1a1a2e; padding: 24px; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 20px; font-size: 12px; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 3px; }
+  .dot-over { background: #e53e3e; }
+  .dot-under { background: #dd6b20; }
+  .dot-ok { background: #38a169; }
+
+  .partner-block { background: white; border-radius: 10px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .partner-header { background: #1a1a2e; color: white; padding: 10px 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { padding: 8px 12px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #555; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+  thead th.left { text-align: left; }
+  thead .group-header { background: #f0f4ff; }
+  thead .group-header-t1 { background: #fdf4ff; }
+  tbody tr { border-bottom: 1px solid #f0f0f0; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.total-row { background: #fafafa; border-top: 2px solid #e5e7eb; font-weight: 600; }
+  tbody tr:hover:not(.total-row) { background: #fafeff; }
+  td { padding: 8px 12px; }
+  td.advisor { font-size: 13px; color: #1a1a2e; min-width: 180px; }
+  td.col-group { border-left: 2px solid #f0f0f0; }
+  thead th.col-group { border-left: 2px solid #e5e7eb; }
+
+  .delta { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .delta-over { background: #fff5f5; color: #c53030; }
+  .delta-under { background: #fffaf0; color: #c05621; }
+  .delta-ok { background: #f0fff4; color: #276749; }
+  .delta-clickable { cursor: pointer; text-decoration: underline dotted; }
+  .delta-clickable:hover { filter: brightness(0.9); }
+
+  .summary-bar { display: flex; gap: 12px; padding: 10px 16px; background: #f9fafb; border-top: 1px solid #eee; flex-wrap: wrap; align-items: center; }
+  .summary-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .pill-red { background: #fff5f5; color: #c53030; }
+  .pill-orange { background: #fffaf0; color: #c05621; }
+  .pill-green { background: #f0fff4; color: #276749; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 12px; width: 720px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+  .modal-subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+  .modal-close { font-size: 20px; color: #aaa; cursor: pointer; line-height: 1; padding: 0 4px; }
+  .modal-close:hover { color: #333; }
+  .modal-body { padding: 16px 20px; overflow-y: auto; }
+
+  .student-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .student-table th { text-align: left; padding: 6px 10px; background: #f9fafb; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #666; border-bottom: 1px solid #eee; }
+  .student-table td { padding: 7px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+  .student-table tr:last-child td { border-bottom: none; }
+  .student-table tr:hover td { background: #fafeff; }
+
+  .badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+  .badge-cs { background: #ebf8ff; color: #2b6cb0; }
+  .badge-rego { background: #f0fff4; color: #276749; }
+  .badge-reengage { background: #fff8e1; color: #92400e; }
+  .badge-t1 { background: #fdf4ff; color: #6b21a8; }
+
+  .arrow { color: #aaa; font-size: 12px; margin: 0 4px; }
+  .empty-msg { color: #aaa; font-size: 13px; text-align: center; padding: 24px 0; }
+</style>
+</head>
+<body>
+
+<h1>Call Mapping Accuracy</h1>
+<p class="subtitle">26 June 2026 &nbsp;&middot;&nbsp; Graduated &amp; Withdrawn students excluded &nbsp;&middot;&nbsp; <strong>Logged</strong> vs <em>Expected</em> &mdash; click a delta to see affected students</p>
+
+<div class="legend">
+  <span style="font-size:12px;font-weight:600;color:#555;">Delta key:</span>
+  <div class="legend-item"><div class="dot dot-over"></div> Over-logged (too many)</div>
+  <div class="legend-item"><div class="dot dot-under"></div> Under-logged (too few)</div>
+  <div class="legend-item"><div class="dot dot-ok"></div> Correct</div>
+</div>
+
+<div id="tables"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-subtitle" id="modal-subtitle"></div>
+      </div>
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"partner":"Edith Cowan University - Online","advisors":[{"name":"Katina Astles","data":[{"logged":2,"expected":2,"delta":0},{"logged":1,"expected":2,"delta":-1},{"logged":6,"expected":5,"delta":1},{"logged":1,"expected":1,"delta":0}]},{"name":"Lily Graciano","data":[{"logged":2,"expected":2,"delta":0},{"logged":0,"expected":1,"delta":-1},{"logged":12,"expected":11,"delta":1},{"logged":1,"expected":1,"delta":0}]},{"name":"Mia Yourn","data":[{"logged":3,"expected":2,"delta":1},{"logged":2,"expected":2,"delta":0},{"logged":1,"expected":2,"delta":-1},{"logged":0,"expected":0,"delta":0}]},{"name":"Nequila Vincent","data":[{"logged":1,"expected":0,"delta":1},{"logged":1,"expected":0,"delta":1},{"logged":11,"expected":12,"delta":-1},{"logged":0,"expected":1,"delta":-1}]},{"name":"Sofie Katsipodas","data":[{"logged":16,"expected":16,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":2,"expected":2,"delta":0},{"logged":2,"expected":2,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":24,"expected":22,"delta":2},{"logged":4,"expected":5,"delta":-1},{"logged":32,"expected":32,"delta":0},{"logged":4,"expected":5,"delta":-1}],"errors":[[{"student":"Laila Om - MCO","advisor":"Mia Yourn","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"},{"student":"Bianca BYRNE - GDPSYADV","advisor":"Nequila Vincent","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"}],[{"student":"Kristen Wilson - MCO","advisor":"Nequila Vincent","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"}],[{"student":"Jessica MULLER - Master of Human Resource Management - Non-cognate","advisor":"Katina Astles","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Timothy Maxwell SANDERS - MCO","advisor":"Lily Graciano","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[]]}},{"partner":"James Cook University - Online","advisors":[{"name":"Kaushi Kalugalla","data":[{"logged":2,"expected":1,"delta":1},{"logged":3,"expected":1,"delta":2},{"logged":4,"expected":6,"delta":-2},{"logged":0,"expected":1,"delta":-1}]},{"name":"Lika Paulo","data":[{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":1,"delta":-1},{"logged":2,"expected":1,"delta":1},{"logged":0,"expected":0,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":2,"expected":1,"delta":1},{"logged":3,"expected":2,"delta":1},{"logged":6,"expected":7,"delta":-1},{"logged":0,"expected":1,"delta":-1}],"errors":[[{"student":"Yashoda Sapkota - MSN","advisor":"Kaushi Kalugalla","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"}],[{"student":"Eunice Wie-Jonah - Master of Nursing - Nursing Education","advisor":"Kaushi Kalugalla","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Bonita Christiansen - MSN","advisor":"Kaushi Kalugalla","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"Charles Anthony - GDPSYB","advisor":"Lika Paulo","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[]]}},{"partner":"Melbourne Business School Online","advisors":[{"name":"Ananya Rao","data":[{"logged":2,"expected":1,"delta":1},{"logged":10,"expected":10,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":1,"delta":-1}]}],"total":{"name":"TOTAL","data":[{"logged":2,"expected":1,"delta":1},{"logged":10,"expected":10,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":1,"delta":-1}],"errors":[[{"student":"Brendan Cao - GCBA","advisor":"Ananya Rao","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"}],[],[],[]]}},{"partner":"RMIT - Online","advisors":[{"name":"Lika Paulo","data":[{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":2,"expected":2,"delta":0},{"logged":0,"expected":0,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":2,"expected":2,"delta":0},{"logged":0,"expected":0,"delta":0}],"errors":[[],[],[],[]]}},{"partner":"Southern Cross University - Online","advisors":[{"name":"Gurman Kaur","data":[{"logged":3,"expected":1,"delta":2},{"logged":3,"expected":5,"delta":-2},{"logged":4,"expected":4,"delta":0},{"logged":0,"expected":0,"delta":0}]},{"name":"Jacinta Hughes","data":[{"logged":0,"expected":0,"delta":0},{"logged":3,"expected":0,"delta":3},{"logged":3,"expected":6,"delta":-3},{"logged":0,"expected":0,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":3,"expected":1,"delta":2},{"logged":6,"expected":5,"delta":1},{"logged":7,"expected":10,"delta":-3},{"logged":0,"expected":0,"delta":0}],"errors":[[{"student":"Sarah Wilson - Master of Project Management - General","advisor":"Gurman Kaur","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Samuel Johanson - MHL","advisor":"Gurman Kaur","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"Tony Vellio - GCPM","advisor":"Jacinta Hughes","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Sarah Hemmingway - Master of Business Administration - Health Services Management","advisor":"Jacinta Hughes","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Luke Odwyer - MBA","advisor":"Jacinta Hughes","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"}],[],[]]}},{"partner":"The University of Melbourne Online","advisors":[{"name":"Emma Arjoon","data":[{"logged":0,"expected":0,"delta":0},{"logged":9,"expected":9,"delta":0},{"logged":6,"expected":4,"delta":2},{"logged":0,"expected":2,"delta":-2}]}],"total":{"name":"TOTAL","data":[{"logged":0,"expected":0,"delta":0},{"logged":9,"expected":9,"delta":0},{"logged":6,"expected":4,"delta":2},{"logged":0,"expected":2,"delta":-2}],"errors":[[],[{"student":"Eve Williamson - MPH","advisor":"Emma Arjoon","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"Gabrielle Henderson - MED","advisor":"Emma Arjoon","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"Mark Kubicki - MPH","advisor":"Emma Arjoon","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Peter Beky - MPH","advisor":"Emma Arjoon","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[]]}},{"partner":"University of Canberra - Online","advisors":[{"name":"Bianca Ceinar","data":[{"logged":8,"expected":7,"delta":1},{"logged":0,"expected":1,"delta":-1},{"logged":1,"expected":2,"delta":-1},{"logged":3,"expected":2,"delta":1}]},{"name":"Bo Plicharoensuk","data":[{"logged":3,"expected":3,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":9,"expected":9,"delta":0},{"logged":0,"expected":0,"delta":0}]},{"name":"David Bell","data":[{"logged":3,"expected":2,"delta":1},{"logged":3,"expected":2,"delta":1},{"logged":16,"expected":16,"delta":0},{"logged":0,"expected":2,"delta":-2}]},{"name":"Jesse Smith","data":[{"logged":1,"expected":1,"delta":0},{"logged":4,"expected":3,"delta":1},{"logged":3,"expected":4,"delta":-1},{"logged":1,"expected":1,"delta":0}]},{"name":"Khushboo Italiya","data":[{"logged":3,"expected":3,"delta":0},{"logged":1,"expected":1,"delta":0},{"logged":3,"expected":3,"delta":0},{"logged":3,"expected":3,"delta":0}]},{"name":"Mignionne Fernandes","data":[{"logged":1,"expected":1,"delta":0},{"logged":2,"expected":2,"delta":0},{"logged":9,"expected":9,"delta":0},{"logged":1,"expected":1,"delta":0}]},{"name":"Rhea Kapoor","data":[{"logged":6,"expected":6,"delta":0},{"logged":1,"expected":0,"delta":1},{"logged":2,"expected":3,"delta":-1},{"logged":0,"expected":0,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":25,"expected":23,"delta":2},{"logged":11,"expected":9,"delta":2},{"logged":43,"expected":46,"delta":-3},{"logged":8,"expected":9,"delta":-1}],"errors":[[{"student":"Julie Wright - GDCO","advisor":"Bianca Ceinar","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"},{"student":"Astra Pillay - JD","advisor":"David Bell","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Sara Lettieri - MCO","advisor":"Rhea Kapoor","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"}],[{"student":"Shivani Bhatia - MSW","advisor":"David Bell","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"Jessica Luppi - MCO","advisor":"Jesse Smith","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"ELI Webb - Master of Public Policy - General","advisor":"Rhea Kapoor","logged":"Rego","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"}],[],[{"student":"Isabella Harris - MSW","advisor":"Bianca Ceinar","logged":"T1","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}]]}},{"partner":"University of New South Wales - Online","advisors":[{"name":"Amelia Churchill","data":[{"logged":5,"expected":3,"delta":2},{"logged":5,"expected":3,"delta":2},{"logged":1,"expected":1,"delta":0},{"logged":0,"expected":4,"delta":-4}]},{"name":"James Miller","data":[{"logged":7,"expected":0,"delta":7},{"logged":0,"expected":7,"delta":-7},{"logged":2,"expected":1,"delta":1},{"logged":0,"expected":1,"delta":-1}]},{"name":"Kimberley Hornlimann","data":[{"logged":1,"expected":2,"delta":-1},{"logged":3,"expected":0,"delta":3},{"logged":4,"expected":5,"delta":-1},{"logged":0,"expected":1,"delta":-1}]},{"name":"Priscilla Samuel","data":[{"logged":16,"expected":15,"delta":1},{"logged":0,"expected":1,"delta":-1},{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":0,"delta":0}]}],"total":{"name":"TOTAL","data":[{"logged":29,"expected":20,"delta":9},{"logged":8,"expected":11,"delta":-3},{"logged":7,"expected":7,"delta":0},{"logged":0,"expected":6,"delta":-6}],"errors":[[{"student":"Katherine Mitchell - MM","advisor":"Amelia Churchill","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Katherine Mitchell - MM","advisor":"Amelia Churchill","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Wilson Zhao - GCDS","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Benson Chan - GCAN","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Julia Myat - MHRM","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Cindy Ha - MAF","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Lauren Degney - MC","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Gabriel Mendes Alves - GCDS","advisor":"James Miller","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Judy Chen - GCCS","advisor":"James Miller","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"William Cross - Master of Cyber Security - Security Management and Leadership","advisor":"Kimberley Hornlimann","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"},{"student":"Masuma Alizada - MM","advisor":"Priscilla Samuel","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"John Lim - GCDS","advisor":"Amelia Churchill","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"Emily Si - MAN","advisor":"Amelia Churchill","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"Syeda Arif - Master of Financial Technology - General","advisor":"Kimberley Hornlimann","logged":"Rego","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Syeda Arif - Master of Financial Technology - General","advisor":"Kimberley Hornlimann","logged":"Rego","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Erica Maslen - GCHRM","advisor":"Kimberley Hornlimann","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"Alessandro Morabito - GCAF","advisor":"James Miller","logged":"Reengage","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[]]}},{"partner":"University of Technology Sydney - Online","advisors":[{"name":"Andrew Wedderburn","data":[{"logged":8,"expected":4,"delta":4},{"logged":0,"expected":0,"delta":0},{"logged":0,"expected":4,"delta":-4},{"logged":0,"expected":0,"delta":0}]},{"name":"Geoffrey Tawil","data":[{"logged":7,"expected":6,"delta":1},{"logged":1,"expected":2,"delta":-1},{"logged":5,"expected":2,"delta":3},{"logged":0,"expected":3,"delta":-3}]},{"name":"Josie Trifunovic","data":[{"logged":8,"expected":2,"delta":6},{"logged":0,"expected":2,"delta":-2},{"logged":0,"expected":4,"delta":-4},{"logged":0,"expected":0,"delta":0}]},{"name":"Lavanya Gupta","data":[{"logged":3,"expected":0,"delta":3},{"logged":1,"expected":1,"delta":0},{"logged":1,"expected":3,"delta":-2},{"logged":2,"expected":3,"delta":-1}]},{"name":"Lily Soriano","data":[{"logged":7,"expected":5,"delta":2},{"logged":0,"expected":1,"delta":-1},{"logged":2,"expected":2,"delta":0},{"logged":0,"expected":1,"delta":-1}]},{"name":"Sharon Pangalos","data":[{"logged":7,"expected":4,"delta":3},{"logged":0,"expected":2,"delta":-2},{"logged":1,"expected":1,"delta":0},{"logged":0,"expected":1,"delta":-1}]}],"total":{"name":"TOTAL","data":[{"logged":40,"expected":21,"delta":19},{"logged":2,"expected":8,"delta":-6},{"logged":9,"expected":16,"delta":-7},{"logged":2,"expected":8,"delta":-6}],"errors":[[{"student":"Mary-Jane Moutia - GCBA","advisor":"Andrew Wedderburn","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Enrolled"},{"student":"Laura Connell - GCUPD","advisor":"Andrew Wedderburn","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Laura Connell - GCUPD","advisor":"Andrew Wedderburn","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Jennifer Sheppard - GCCCOMM","advisor":"Andrew Wedderburn","logged":"CS","expected":"Reengage","enrol":"Not Active","next_term":"Enrolled"},{"student":"Jincy Chittilappilly - Master of Health Services Management - Digital Health & Analytics","advisor":"Geoffrey Tawil","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Sophia Meolver - GCHA","advisor":"Geoffrey Tawil","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Trudy Perkins - GDPSY","advisor":"Geoffrey Tawil","logged":"CS","expected":"Reengage","enrol":"Pending","next_term":""},{"student":"Madi Shields - GDPH","advisor":"Geoffrey Tawil","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Joseph Olbrycht-Palmer - MIR","advisor":"Josie Trifunovic","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Leave of Absence"},{"student":"Ahmad Al-Momani - GCEDLL","advisor":"Josie Trifunovic","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Liam Jenkins - GCIR","advisor":"Josie Trifunovic","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Not Active"},{"student":"Adriana Portolesi - GCUPD","advisor":"Josie Trifunovic","logged":"CS","expected":"Reengage","enrol":"Pending","next_term":""},{"student":"Augustine Luan Kinh Dinh Nguyen - MBA","advisor":"Josie Trifunovic","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Andrew Goodyear - MEDLL","advisor":"Josie Trifunovic","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Leave of Absence"},{"student":"Rabin Pariyar - GCBA","advisor":"Lavanya Gupta","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Enrolled"},{"student":"Shameer Aziz - MPD","advisor":"Lavanya Gupta","logged":"CS","expected":"Reengage","enrol":"Leave of Absence","next_term":"Enrolled"},{"student":"Stephanie Nedelkovski - MPD","advisor":"Lavanya Gupta","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Tara Dawson - GCCFH","advisor":"Lily Soriano","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Michelle Siasat - GCNE","advisor":"Lily Soriano","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Chloe Cant - GDPSY","advisor":"Sharon Pangalos","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Melanie Biddulph - GCNE","advisor":"Sharon Pangalos","logged":"CS","expected":"T1","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Kylie-May Kearney - GCCFH","advisor":"Sharon Pangalos","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[],[{"student":"Shamita Prakesh - GDPSY","advisor":"Geoffrey Tawil","logged":"Reengage","expected":"T1","enrol":"Enrolled","next_term":"Not Active"},{"student":"YINZHU Wang - Master of Advanced Nursing - General","advisor":"Geoffrey Tawil","logged":"Reengage","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Shelina Gandham - GDPSYADV","advisor":"Geoffrey Tawil","logged":"Reengage","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"},{"student":"Anchita Sood - MPH","advisor":"Geoffrey Tawil","logged":"Reengage","expected":"CS","enrol":"Enrolled","next_term":"Enrolled"}],[]]}},{"partner":"Victoria University - Online","advisors":[{"name":"Aisha Bowie","data":[{"logged":0,"expected":0,"delta":0},{"logged":4,"expected":3,"delta":1},{"logged":0,"expected":1,"delta":-1},{"logged":0,"expected":0,"delta":0}]},{"name":"Annaliese Giegerl","data":[{"logged":10,"expected":10,"delta":0},{"logged":0,"expected":0,"delta":0},{"logged":1,"expected":1,"delta":0},{"logged":0,"expected":0,"delta":0}]},{"name":"Mary Hammoud","data":[{"logged":7,"expected":4,"delta":3},{"logged":1,"expected":3,"delta":-2},{"logged":2,"expected":2,"delta":0},{"logged":0,"expected":1,"delta":-1}]}],"total":{"name":"TOTAL","data":[{"logged":17,"expected":14,"delta":3},{"logged":5,"expected":6,"delta":-1},{"logged":3,"expected":4,"delta":-1},{"logged":0,"expected":1,"delta":-1}],"errors":[[{"student":"James Koryon - MBA","advisor":"Mary Hammoud","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"James Koryon - MBA","advisor":"Mary Hammoud","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"},{"student":"Maddison Ryan - MTPE","advisor":"Mary Hammoud","logged":"CS","expected":"Rego","enrol":"Enrolled","next_term":"Not Active"}],[{"student":"Amina Ahmed - MTPE","advisor":"Aisha Bowie","logged":"Rego","expected":"Reengage","enrol":"Not Active","next_term":"Not Active"},{"student":"Barbara Grellman - GCNIL","advisor":"Mary Hammoud","logged":"Rego","expected":"T1","enrol":"Enrolled","next_term":"Not Active"}],[],[]]}}];
+
+const typeLabels = ['CS Engagement', 'Registration', 'Reengagement', 'T1'];
+
+const ERROR_STORE = {};
+DATA.forEach((p, pi) => {
+  if (p.total.errors) {
+    p.total.errors.forEach((errs, ti) => {
+      ERROR_STORE[`${pi}-${ti}`] = { partner: p.partner, typeIdx: ti, errors: errs };
+    });
+  }
+});
+
+function badgeClass(t) {
+  if (t === 'CS') return 'badge-cs';
+  if (t === 'Rego') return 'badge-rego';
+  if (t === 'T1') return 'badge-t1';
+  return 'badge-reengage';
+}
+
+function deltaClass(d) {
+  if (d > 0) return 'delta-over';
+  if (d < 0) return 'delta-under';
+  return 'delta-ok';
+}
+
+function deltaLabel(d) {
+  if (d > 0) return `+${d} over`;
+  if (d < 0) return `${d} under`;
+  return '✓';
+}
+
+function openModal(partner, typeIdx, errors) {
+  const label = typeLabels[typeIdx];
+  document.getElementById('modal-title').textContent = `${partner} — ${label} discrepancies`;
+  document.getElementById('modal-subtitle').textContent = `${errors.length} incorrectly mapped call${errors.length !== 1 ? 's' : ''}`;
+  const body = document.getElementById('modal-body');
+  if (errors.length === 0) {
+    body.innerHTML = '<p class="empty-msg">No misclassified students found for this call type.</p>';
+  } else {
+    let html = `<table class="student-table">
+      <thead><tr>
+        <th>Student</th><th>Advisor</th><th>Logged</th><th></th><th>Should Be</th><th>Enrol Status</th><th>Next Term</th>
+      </tr></thead><tbody>`;
+    errors.forEach(e => {
+      html += `<tr>
+        <td>${e.student}</td>
+        <td style="color:#666">${e.advisor}</td>
+        <td><span class="badge ${badgeClass(e.logged)}">${e.logged}</span></td>
+        <td class="arrow">&rarr;</td>
+        <td><span class="badge ${badgeClass(e.expected)}">${e.expected}</span></td>
+        <td style="color:#666;font-size:11px">${e.enrol}</td>
+        <td style="color:#666;font-size:11px">${e.next_term}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+  }
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+const container = document.getElementById('tables');
+
+DATA.forEach((p, pi) => {
+  const block = document.createElement('div');
+  block.className = 'partner-block';
+
+  const hdr = document.createElement('div');
+  hdr.className = 'partner-header';
+  hdr.textContent = p.partner;
+  block.appendChild(hdr);
+
+  const table = document.createElement('table');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th class="left" rowspan="2" style="width:200px">Advisor</th>
+        <th colspan="3" class="group-header col-group">CS Engagement</th>
+        <th colspan="3" class="group-header col-group">Registration</th>
+        <th colspan="3" class="group-header col-group">Reengagement</th>
+        <th colspan="3" class="group-header-t1 col-group">T1</th>
+      </tr>
+      <tr>
+        <th class="col-group">Logged</th><th>Expected</th><th>Delta</th>
+        <th class="col-group">Logged</th><th>Expected</th><th>Delta</th>
+        <th class="col-group">Logged</th><th>Expected</th><th>Delta</th>
+        <th class="col-group">Logged</th><th>Expected</th><th>Delta</th>
+      </tr>
+    </thead><tbody></tbody>`;
+
+  const tbody = table.querySelector('tbody');
+  const allRows = [...p.advisors, p.total];
+
+  allRows.forEach((row, idx) => {
+    const isTotal = idx === allRows.length - 1;
+    const tr = document.createElement('tr');
+    if (isTotal) tr.className = 'total-row';
+
+    const advisorTd = document.createElement('td');
+    advisorTd.className = 'advisor';
+    advisorTd.textContent = row.name;
+    tr.appendChild(advisorTd);
+
+    row.data.forEach((d, i) => {
+      const dc = deltaClass(d.delta);
+      const dl = deltaLabel(d.delta);
+
+      const tdLogged = document.createElement('td');
+      tdLogged.className = 'col-group';
+      tdLogged.style.textAlign = 'center';
+      tdLogged.textContent = d.logged;
+      tr.appendChild(tdLogged);
+
+      const tdExpected = document.createElement('td');
+      tdExpected.style.cssText = 'text-align:center;color:#888';
+      tdExpected.textContent = d.expected;
+      tr.appendChild(tdExpected);
+
+      const tdDelta = document.createElement('td');
+      tdDelta.style.textAlign = 'center';
+
+      const span = document.createElement('span');
+      span.className = `delta ${dc}`;
+      span.textContent = dl;
+
+      const storeKey = `${pi}-${i}`;
+      const store = ERROR_STORE[storeKey];
+      if (isTotal && store && store.errors.length > 0 && d.delta !== 0) {
+        span.classList.add('delta-clickable');
+        span.title = 'Click to see affected students';
+        span.addEventListener('click', () => openModal(store.partner, store.typeIdx, store.errors));
+      }
+
+      tdDelta.appendChild(span);
+      tr.appendChild(tdDelta);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  block.appendChild(table);
+
+  const summary = document.createElement('div');
+  summary.className = 'summary-bar';
+  const label = document.createElement('span');
+  label.style.cssText = 'font-size:11px;color:#888';
+  label.textContent = 'Partner total discrepancy:';
+  summary.appendChild(label);
+
+  let anyPill = false;
+  p.total.data.forEach((d, i) => {
+    if (d.delta === 0) return;
+    anyPill = true;
+    const cls = d.delta > 0 ? 'pill-red' : 'pill-orange';
+    const sign = d.delta > 0 ? '+' : '';
+    const pill = document.createElement('span');
+    pill.className = `summary-pill ${cls}`;
+    pill.textContent = `${typeLabels[i]}: ${sign}${d.delta}`;
+    const storeKey = `${pi}-${i}`;
+    const store = ERROR_STORE[storeKey];
+    if (store && store.errors.length > 0) {
+      pill.style.cssText = 'cursor:pointer;text-decoration:underline dotted';
+      pill.title = 'Click to see affected students';
+      pill.addEventListener('click', () => openModal(store.partner, store.typeIdx, store.errors));
+    }
+    summary.appendChild(pill);
+  });
+  if (!anyPill) {
+    const ok = document.createElement('span');
+    ok.className = 'summary-pill pill-green';
+    ok.textContent = 'All correct';
+    summary.appendChild(ok);
+  }
+  block.appendChild(summary);
+
+  container.appendChild(block);
+});
+</script>
+</body>
+</html>
