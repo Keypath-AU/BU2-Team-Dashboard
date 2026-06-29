@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Success CRM Enhancements</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { min-height: 100vh; background: linear-gradient(145deg, #f0f0f5 0%, #e8e8f0 50%, #f2f0f5 100%); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a2e; padding: 24px 20px; }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header .label { display: inline-block; color: #4ECDC4; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 6px; }
+  .header h1 { font-size: 28px; font-weight: 800; line-height: 1.2; color: #1a1a2e; }
+  .header p { margin-top: 6px; font-size: 13px; color: #555770; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .pills { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .pill { display: flex; align-items: center; gap: 6px; border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 600; }
+  .board { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; max-width: 1400px; margin: 0 auto; }
+  .column-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 0 4px; }
+  .column-header .emoji { font-size: 16px; }
+  .column-header .label-text { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .column-header .count { font-size: 11px; font-weight: 700; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .column-body { border-radius: 12px; padding: 10px; min-height: 100px; }
+  .empty-msg { text-align: center; padding: 24px 12px; font-size: 12px; color: #8b8da3; font-style: italic; }
+  .card { background: #fff; border-radius: 10px; border-left: 3px solid; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 14px 16px 0 16px; }
+  .card-title { font-size: 13px; font-weight: 600; line-height: 1.35; color: #1a1a2e; }
+  .impact-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .card-summary { padding: 6px 16px 0 16px; font-size: 12px; color: #555770; line-height: 1.5; }
+  details { margin-top: 4px; }
+  summary { padding: 8px 16px 10px 16px; font-size: 11px; color: #8b8da3; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { color: #555770; }
+  .card-detail-inner { padding: 10px 16px 14px 16px; border-top: 1px solid #e8e8ee; }
+  .card-detail-text { font-size: 12px; color: #1a1a2e; line-height: 1.65; white-space: pre-line; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 11px; color: #8b8da3; }
+  .effort-badge { padding: 1px 8px; border-radius: 12px; font-weight: 600; }
+  .footer { text-align: center; margin-top: 28px; font-size: 11px; color: #8b8da3; }
+  .footer .updated { margin-top: 4px; font-size: 10px; color: #aaaabc; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="label">Student Success Platform</div>
+  <h1>Success CRM Enhancements</h1>
+  <p>Current status of all system enhancement requests. Click any card for details.</p>
+</div>
+
+<div class="pills">
+  <div class="pill" style="background:rgba(232,185,49,0.1);border:1px solid rgba(232,185,49,0.3);color:#E8B931">💡 2 Under Consideration</div>
+  <div class="pill" style="background:rgba(123,140,222,0.1);border:1px solid rgba(123,140,222,0.3);color:#7B8CDE">🔍 4 In Review</div>
+  <div class="pill" style="background:rgba(78,205,196,0.1);border:1px solid rgba(78,205,196,0.3);color:#4ECDC4">⚡ 0 Current Sprint</div>
+  <div class="pill" style="background:rgba(107,203,119,0.1);border:1px solid rgba(107,203,119,0.3);color:#6BCB77">🚀 0 Ready to Release</div>
+  <div class="pill" style="background:rgba(160,160,180,0.1);border:1px solid rgba(160,160,180,0.3);color:#888aa3">✅ 7 Completed</div>
+</div>
+
+<div class="board">
+
+  <!-- UNDER CONSIDERATION -->
+  <div>
+    <div class="column-header">
+      <span class="emoji">💡</span>
+      <span class="label-text" style="color:#E8B931">Under Consideration</span>
+      <span class="count" style="background:#E8B931">2</span>
+    </div>
+    <div class="column-body" style="background:rgba(232,185,49,0.08);border:1px solid rgba(232,185,49,0.25)">
+      <div class="card" style="border-left-color:#E8B931">
+        <div class="card-top">
+          <div class="card-title">Compliance Reminder</div>
+          <span class="impact-badge" style="background:rgba(232,185,49,0.1);color:#E8B931">Medium</span>
+        </div>
+        <div class="card-summary">Inclusion of a Compliance Reminder on the new call page.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Investigating simple options to improve the compliance situation ahead of the Pure Cloud upgrade.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(232,185,49,0.15);color:#E8B931">Effort: Low</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#E8B931">
+        <div class="card-top">
+          <div class="card-title">Free Text Field to Track Future Calls</div>
+          <span class="impact-badge" style="background:rgba(232,185,49,0.1);color:#E8B931">Medium</span>
+        </div>
+        <div class="card-summary">Improving advisor visibility of upcoming booked calls directly within the CRM.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Currently, VCITA bookings....particularly those rescheduled or made outside of a call aren't reliably visible in the CRM, creating blind spots for advisors. We're exploring options to address this without adding manual admin overhead.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(232,185,49,0.15);color:#E8B931">Effort: Medium</span></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN REVIEW -->
+  <div>
+    <div class="column-header">
+      <span class="emoji">🔍</span>
+      <span class="label-text" style="color:#7B8CDE">In Review</span>
+      <span class="count" style="background:#7B8CDE">4</span>
+    </div>
+    <div class="column-body" style="background:rgba(123,140,222,0.08);border:1px solid rgba(123,140,222,0.25)">
+      <div class="card" style="border-left-color:#7B8CDE">
+        <div class="card-top">
+          <div class="card-title">Enrolment Blocker Identification &amp; CRM Visibility</div>
+          <span class="impact-badge" style="background:rgba(232,93,117,0.1);color:#E85D75">High</span>
+        </div>
+        <div class="card-summary">Identify and surface external enrolment blockers — such as LANTITE and AIM — within the CRM to enable proactive student intervention.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Various external requirements can block a student from enrolling into their next unit — including LANTITE (English and maths proficiency assessments), Academic Integrity Modules (AIM), and other partner-specific compliance obligations. Currently there is no consistent visibility of these blockers within the CRM. Reports tracking student completion status are received from partner institutions, but there is no structured view of when these reports arrive, what they contain, or how advisers should act on them. This leaves the team unable to identify and contact at-risk students in time to prevent a loss of enrolment.
+
+This initiative will map all known enrolment blockers across each partner, assess current reporting pathways (what reports exist, where they originate, what dates they are received), and identify gaps in CRM visibility. The outcome will be the creation of one or more CRM fields or views — fed by reports requested from partner institutions — that give advisers clear, actionable visibility of each student's compliance status against these requirements. The goal is to reduce student attrition caused by non-completion of mandatory modules or assessments, enabling the team to proactively support at-risk students before a blocker prevents their next enrolment.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(123,140,222,0.15);color:#7B8CDE">Effort: TBC</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#7B8CDE">
+        <div class="card-top">
+          <div class="card-title">Placement Hours Tracking in CRM with InPlace</div>
+          <span class="impact-badge" style="background:rgba(232,93,117,0.1);color:#E85D75">High</span>
+        </div>
+        <div class="card-summary">Surface placement hours data from InPlace directly within the CRM student record.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Advisors currently have no visibility of a student's placement hours — completed, remaining, or required — without leaving the CRM and navigating to InPlace. This creates inefficiency during calls and means advisors can miss critical progression risks.
+
+This enhancement maps placement hours data from InPlace into the CRM, surfacing it on the student Enrolment page alongside existing placement fields. Objectives include enabling advisors to monitor hours progress at a glance, support earlier identification of students at risk of not meeting placement requirements, and improve cohort-level reporting on placement completion rates.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(123,140,222,0.15);color:#7B8CDE">Effort: Medium</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#7B8CDE">
+        <div class="card-top">
+          <div class="card-title">Live Chat for Student Success — Feasibility Review &amp; Hosting Solution</div>
+          <span class="impact-badge" style="background:rgba(232,185,49,0.1);color:#E8B931">Medium</span>
+        </div>
+        <div class="card-summary">Assessing the viability of a live chat channel to complement advisor call-based support.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Students increasingly expect real-time digital support options, and advisors face high call volumes for queries that could be resolved faster through chat. The absence of a live chat channel creates friction in the student experience and limits advisor capacity for higher-value conversations.
+
+This initiative covers a feasibility review of live chat implementation for the Student Success function, including evaluation of hosting solutions, integration requirements with the CRM, and advisor workflow impact. Objectives include identifying a preferred platform, mapping technical dependencies, assessing operational costs, and defining a recommended approach for piloting the solution.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(123,140,222,0.15);color:#7B8CDE">Effort: TBC</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#7B8CDE">
+        <div class="card-top">
+          <div class="card-title">CRM Call Classification &amp; Intent to Enrol Enhancement</div>
+          <span class="impact-badge" style="background:rgba(232,93,117,0.1);color:#E85D75">High</span>
+        </div>
+        <div class="card-summary">Automate call subject assignment using existing CRM data, and make Intent to Enrol a mandatory, dynamically editable field.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">SSAs are currently required to manually assign a call type/subject at the end of every logged call. This introduces inconsistency across teams and relies entirely on adviser compliance at the point of wrap-up. The data needed to determine the majority of call types — specifically Enrolment Status and Next Term Status — already exists in the CRM. Automating this assignment would reduce manual effort, improve data consistency, and free advisers to focus on higher-value tasks. Separately, the Intent to Enrol field is not mandatory and has no mechanism for post-call updates, limiting its reliability for forecasting and intervention planning.
+
+This initiative has two components:
+
+1. Automated Call Subject Assignment
+The CRM will automatically assign the student position subject at wrap-up by reading existing enrolment data (Enrolment Status and Next Term Status) already available in the standard enrolment view, covering the five primary student position categories. Advisers will no longer manually select these. A secondary, optional tier is retained for calls that cannot be auto-classified — topic-based subjects such as T1s, Placement, Payment, and Risk. Advisers may assign one of these in addition to the auto-assigned subject where the call topic warrants it.
+
+2. Mandatory Intent to Enrol on Call Wrap-Up
+For every call where a student was spoken to, the call cannot be closed until an Intent to Enrol value has been selected — removing the discretionary nature of the field and ensuring consistent data capture. The field must remain dynamically editable outside of the call workflow, allowing advisers and team leaders to update it at any time (e.g. if a student calls back the following day to confirm their enrolment decision).</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(123,140,222,0.15);color:#7B8CDE">Effort: Medium</span></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- CURRENT SPRINT -->
+  <div>
+    <div class="column-header">
+      <span class="emoji">⚡</span>
+      <span class="label-text" style="color:#4ECDC4">Current Sprint</span>
+      <span class="count" style="background:#4ECDC4">0</span>
+    </div>
+    <div class="column-body" style="background:rgba(78,205,196,0.08);border:1px solid rgba(78,205,196,0.25)">
+      <div class="empty-msg">No items yet</div>
+    </div>
+  </div>
+
+  <!-- READY TO RELEASE -->
+  <div>
+    <div class="column-header">
+      <span class="emoji">🚀</span>
+      <span class="label-text" style="color:#6BCB77">Ready to Release</span>
+      <span class="count" style="background:#6BCB77">0</span>
+    </div>
+    <div class="column-body" style="background:rgba(107,203,119,0.08);border:1px solid rgba(107,203,119,0.25)">
+      <div class="empty-msg">No items yet</div>
+    </div>
+  </div>
+
+  <!-- COMPLETED -->
+  <div>
+    <div class="column-header">
+      <span class="emoji">✅</span>
+      <span class="label-text" style="color:#888aa3">Completed</span>
+      <span class="count" style="background:#888aa3">7</span>
+    </div>
+    <div class="column-body" style="background:rgba(160,160,180,0.06);border:1px solid rgba(160,160,180,0.2)">
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Call Type Refinement</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">Low</span>
+        </div>
+        <div class="card-summary">A small number of refinements to simplify and improve consistency across call logging.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">All new student related calls will be consolidated under a single Welcome Call category.
+
+Creation of a new T1 Call — At-Risk / Retention will be renamed to At-Risk Call. A number of unused call types will be removed.
+
+These changes are aimed at reducing complexity, improving data quality, and making it easier to select the right call type.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: Low</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Risk Dashboards</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">High</span>
+        </div>
+        <div class="card-summary">Further revision of the Risk 1-5 Dashboards to better identify and mitigate risk.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Redesigning our student risk framework — moving from flat indicator matching to a weighted, composite scoring model. The goal: every advisor knows exactly who to call, in what order, and why.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: High</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Visibility of Compliance Status for Placement in CRM</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">High</span>
+        </div>
+        <div class="card-summary">Mapping existing compliance data from the InPlace system to the CRM.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">This data will surface on the Enrolment page alongside other call activity, enabling improved tracking and reporting.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: High</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Visibility of Placement Status in CRM</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">High</span>
+        </div>
+        <div class="card-summary">Mapping existing placement status data from the InPlace system to the CRM.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Advisors currently need to leave the CRM and refer to EPIC and/or InPlace to check student placement status (Looking, Potential, Interviewing and/or Locked In).
+
+This enhancement would surface that data directly within the student record, improving efficiency and enabling clearer visibility both at an individual and cohort level.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: High</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Visibility of Degree Path Fields in CRM</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">High</span>
+        </div>
+        <div class="card-summary">Improve visibility and usability of vital Degree Path Data in the CRM.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Degree Paths currently has no filtering or dashboard capability. Adding these 5 CRM fields fixes that:
+
+• Credits Completed
+• Credits Remaining
+• Expected Completion Date
+• Next Placement Date
+• Reviewed Date</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: High</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">Next Call Scheduled</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">Medium</span>
+        </div>
+        <div class="card-summary">This enhancement would introduce a Next Call Scheduled option within call wrap up.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">When wrapping up a call, advisors will now be required to complete the Next Call Scheduled field (Yes, No, or N/A). If Yes is selected, a date field will appear and must be completed. This data will surface on the Enrolment page alongside other call activity, enabling improved tracking and reporting.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: Medium</span></div>
+          </div>
+        </details>
+      </div>
+      <div class="card" style="border-left-color:#888aa3">
+        <div class="card-top">
+          <div class="card-title">SA Fee Help and SA Fee Payment Status</div>
+          <span class="impact-badge" style="background:rgba(160,160,180,0.1);color:#888aa3">Medium</span>
+        </div>
+        <div class="card-summary">Fees data to be included in the Enrolment page.</div>
+        <details>
+          <summary>▼ Click for details</summary>
+          <div class="card-detail-inner">
+            <div class="card-detail-text">Various schools have to follow up with students for SA fee payments. If fees are unpaid, student may not be able to enrol. New fields have been added to the Enrolment page to easily track this information and improve advisor workflow.</div>
+            <div class="card-meta"><span class="effort-badge" style="background:rgba(160,160,180,0.15);color:#888aa3">Effort: Medium</span></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Student Success Platform · Success CRM Enhancements
+  <div class="updated">Last updated: 30 June 2026 · 7 completed, 4 in review, 2 under consideration</div>
+</div>
+
+</body>
+</html>
