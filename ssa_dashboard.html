@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SSA Call Quality Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, Arial, sans-serif; background: #F3F4F6; color: #1F2937; font-size: 13px; }
+
+.header { background: #1E3A5F; color: white; padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 20px; font-weight: 700; }
+.header .sub { font-size: 11px; color: #93C5FD; margin-top: 3px; }
+.header .meta { font-size: 11px; color: #93C5FD; text-align: right; }
+
+.filters { background: white; padding: 10px 28px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #E5E7EB; flex-wrap: wrap; }
+.filter-label { font-size: 11px; color: #6B7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-btn { padding: 4px 12px; border: 1px solid #D1D5DB; border-radius: 20px; font-size: 11px; cursor: pointer; background: white; color: #374151; transition: all 0.15s; }
+.filter-btn:hover, .filter-btn.active { background: #1E3A5F; color: white; border-color: #1E3A5F; }
+
+.content { padding: 20px 28px; }
+
+.cards { display: flex; gap: 14px; margin-bottom: 20px; }
+.card { background: white; border-radius: 6px; padding: 14px 18px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.07); border-top: 3px solid; }
+.card .lbl { font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.card .val { font-size: 26px; font-weight: 700; line-height: 1; }
+.card .sub { font-size: 10px; color: #9CA3AF; margin-top: 4px; }
+.c-navy { border-color: #1E3A5F; } .c-navy .val { color: #1E3A5F; }
+.c-green { border-color: #16A34A; } .c-green .val { color: #16A34A; }
+.c-amber { border-color: #D97706; } .c-amber .val { color: #D97706; }
+.c-red   { border-color: #DC2626; } .c-red   .val { color: #DC2626; }
+
+.sec-lbl { font-size: 10px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.8px; margin: 18px 0 8px; }
+
+.tbl-wrap { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); overflow-x: auto; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+thead tr:first-child th { background: #1E3A5F; color: white; padding: 8px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; text-align: center; border-right: 1px solid rgba(255,255,255,0.15); }
+thead tr:first-child th:first-child, thead tr:first-child th:nth-child(2), thead tr:first-child th:nth-child(3) { text-align: left; }
+thead tr.sub-hdr th { background: #2D5A8E; color: #BFDBFE; padding: 6px 14px; font-size: 9px; font-weight: 600; text-align: center; border-right: 1px solid rgba(255,255,255,0.1); border-bottom: 2px solid #1E3A5F; }
+thead tr.sub-hdr th:first-child, thead tr.sub-hdr th:nth-child(2), thead tr.sub-hdr th:nth-child(3) { text-align: left; }
+tbody td { padding: 9px 14px; border-bottom: 1px solid #F3F4F6; border-right: 1px solid #F3F4F6; text-align: center; vertical-align: middle; }
+tbody td:first-child, tbody td:nth-child(2), tbody td:nth-child(3) { text-align: left; }
+tbody tr:hover td { filter: brightness(0.97); }
+tbody tr.avg-row td { background: #F3F4F6 !important; font-weight: 700; font-size: 11px; color: #374151; border-top: 2px solid #D1D5DB; }
+.advisor-name { font-weight: 700; color: #1E3A5F; }
+.calls-badge { display: inline-block; background: #EFF6FF; color: #1E40AF; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
+
+.sc { display: inline-block; padding: 2px 8px; border-radius: 3px; font-weight: 700; font-size: 12px; min-width: 46px; text-align: center; }
+.sc-g { background: #C6EFCE; color: #375623; }
+.sc-a { background: #FFEB9C; color: #9C5700; }
+.sc-r { background: #FFC7CE; color: #9C0006; }
+.sc-n { background: #F3F4F6; color: #9CA3AF; }
+
+.risk { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.r-low  { background: #D1FAE5; color: #065F46; }
+.r-med  { background: #FEF3C7; color: #92400E; }
+.r-high { background: #FEE2E2; color: #991B1B; }
+
+.bottom { display: flex; gap: 16px; }
+.panel { background: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); padding: 16px 18px; flex: 1; }
+.panel h3 { font-size: 11px; font-weight: 700; color: #1E3A5F; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #EFF6FF; }
+
+.theme-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; margin: 2px; }
+.theme-r { background: #FEE2E2; color: #991B1B; }
+.theme-a { background: #FEF3C7; color: #92400E; }
+.theme-g { background: #D1FAE5; color: #065F46; }
+
+.bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.bar-lbl { font-size: 11px; color: #374151; width: 130px; flex-shrink: 0; text-align: right; }
+.bar-wrap { flex: 1; background: #F3F4F6; border-radius: 3px; height: 18px; overflow: hidden; }
+.bar { height: 100%; border-radius: 3px; display: flex; align-items: center; padding-left: 6px; font-size: 10px; font-weight: 700; color: white; }
+.bar-val { font-size: 11px; font-weight: 700; width: 36px; }
+
+.log-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.log-table th { text-align: left; padding: 5px 8px; color: #6B7280; font-size: 10px; font-weight: 700; border-bottom: 1px solid #E5E7EB; text-transform: uppercase; }
+.log-table td { padding: 6px 8px; border-bottom: 1px solid #F3F4F6; }
+.log-table tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>SSA Call Quality — Team Dashboard</h1>
+    <div class="sub">FY27 QA Framework &nbsp;·&nbsp; June – July 2026</div>
+  </div>
+  <div class="meta" id="header-meta">32 evaluations &nbsp;·&nbsp; 16 advisors<br>Last updated 2 July 2026</div>
+</div>
+
+<div class="filters">
+  <span class="filter-label">Call Type:</span>
+  <button class="filter-btn active" onclick="setFilter('type','all',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('type','Registration',this)">Registration</button>
+  <button class="filter-btn" onclick="setFilter('type','Reengagement',this)">Reengagement</button>
+  <button class="filter-btn" onclick="setFilter('type','CS Engagement',this)">CS Engagement</button>
+  <button class="filter-btn" onclick="setFilter('type','T1',this)">T1</button>
+  <button class="filter-btn" onclick="setFilter('type','Unknown',this)">Unknown</button>
+  <span style="margin-left:12px" class="filter-label">Quality:</span>
+  <button class="filter-btn active" onclick="setFilter('risk','all',this)">All</button>
+  <button class="filter-btn" onclick="setFilter('risk','Low',this)">High</button>
+  <button class="filter-btn" onclick="setFilter('risk','Medium',this)">Medium</button>
+  <button class="filter-btn" onclick="setFilter('risk','High',this)">Low</button>
+</div>
+
+<div class="content">
+<div class="cards">
+  <div class="card c-navy"><div class="lbl">Team Average</div><div class="val" id="card-avg">—</div><div class="sub" id="card-avg-sub">evaluations</div></div>
+  <div class="card c-green"><div class="lbl">High Quality</div><div class="val" id="card-low">—</div><div class="sub" id="card-low-sub">calls</div></div>
+  <div class="card c-amber"><div class="lbl">Medium Quality</div><div class="val" id="card-med">—</div><div class="sub" id="card-med-sub">calls</div></div>
+  <div class="card c-red"><div class="lbl">Low Quality</div><div class="val" id="card-high">—</div><div class="sub" id="card-high-sub">calls</div></div>
+</div>
+
+<div class="sec-lbl">Advisor Performance Heatmap</div>
+<div class="tbl-wrap">
+<table id="heatmap">
+  <thead>
+    <tr>
+      <th rowspan="2" style="width:160px">Advisor</th>
+      <th rowspan="2" style="width:55px">Calls</th>
+      <th rowspan="2" style="width:80px">Overall</th>
+      <th colspan="1">Connect & Discover</th>
+      <th colspan="1">Explore & Advice</th>
+      <th colspan="1">Resolve</th>
+      <th rowspan="2">Quality</th>
+    </tr>
+    <tr class="sub-hdr">
+      <th>S1<br>Opening · Listen · Question</th>
+      <th>S2<br>Summarise · Advice · Options</th>
+      <th>S3<br>Close · Confidence</th>
+    </tr>
+  </thead>
+  <tbody id="heatmap-body"></tbody>
+</table>
+</div>
+
+<div class="bottom">
+  <div class="panel" style="flex:1.2">
+    <h3>Recurring Themes</h3>
+    <div id="themes-panel"></div>
+  </div>
+  <div class="panel" style="flex:0.85">
+    <h3>Score by Call Type</h3>
+    <div id="calltype-panel"></div>
+  </div>
+  <div class="panel" style="flex:1.6">
+    <h3>Call Log</h3>
+    <table class="log-table">
+      <thead><tr><th>ID</th><th>Agent</th><th>Type</th><th>Date</th><th>Score</th><th>Quality</th></tr></thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<script>
+const RAW = [
+  // C001-C009 original
+  {id:'C001',agent:'Aisha Bowie',date:'2026-07-02',type:'Registration',s1:67,s2:67,s3:75,overall:69,pt:'Shallow Discovery',st:'Weak Next Steps',risk:'Medium'},
+  {id:'C002',agent:'Sofie Katsipodas',date:'2026-07-02',type:'CS Engagement',s1:83,s2:50,s3:100,overall:78,pt:'Generic Guidance',st:'Limited Discovery',risk:'Low'},
+  {id:'C003',agent:'Mignionne Fernandes',date:'2026-07-02',type:'Reengagement',s1:33,s2:33,s3:0,overall:22,pt:'No Discovery',st:'No Empathy',risk:'High'},
+  {id:'C004',agent:'Lily Graciano',date:'2026-07-01',type:'Unknown',s1:83,s2:100,s3:100,overall:94,pt:'Strong Ownership',st:'Structure Opportunity',risk:'Low'},
+  {id:'C005',agent:'Rhea Kapoor',date:'2026-06-19',type:'Unknown',s1:50,s2:33,s3:50,overall:44,pt:'Poor Diagnosis',st:'Weak Call Control',risk:'Medium'},
+  {id:'C006',agent:'Jesse Smith',date:'2026-06-19',type:'Unknown',s1:100,s2:100,s3:100,overall:100,pt:'Strong Coaching Structure',st:'Proactive Follow-Up',risk:'Low'},
+  {id:'C007',agent:'Sofie Katsipodas',date:'2026-07-02',type:'Registration',s1:83,s2:67,s3:75,overall:75,pt:'Transactional Handling',st:'Limited Discovery',risk:'Low'},
+  {id:'C008',agent:'Annaliese Giegerl',date:'2026-07-02',type:'CS Engagement',s1:100,s2:100,s3:100,overall:100,pt:'Strong Engagement',st:'Personalised Coaching',risk:'Low'},
+  {id:'C009',agent:'Jesse Smith',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:100,overall:83,pt:'Resource Reliance',st:'Limited Discovery',risk:'Low'},
+  // C010-C032 new
+  {id:'C010',agent:'Mary Hammoud',date:'2026-07-02',type:'Unknown',s1:83,s2:83,s3:100,overall:89,pt:'Limited Discovery',st:'Add light discovery',risk:'Low'},
+  {id:'C011',agent:'Mia Yourn',date:'2026-07-02',type:'CS Engagement',s1:83,s2:33,s3:75,overall:64,pt:'Low Discovery/Value',st:'Turn check-ins into coaching',risk:'High'},
+  {id:'C012',agent:'Katina Astles',date:'2026-07-02',type:'Unknown',s1:100,s2:67,s3:75,overall:81,pt:'Low Ownership',st:'Add proactive ownership',risk:'Medium'},
+  {id:'C013',agent:'Nequila Vincent',date:'2026-07-02',type:'Unknown',s1:100,s2:50,s3:75,overall:75,pt:'Weak Next Steps',st:'Set specific follow-ups',risk:'Medium'},
+  {id:'C014',agent:'Nequila Vincent',date:'2026-07-02',type:'Unknown',s1:83,s2:50,s3:75,overall:69,pt:'Weak Ownership',st:'Own resolution earlier',risk:'High'},
+  {id:'C015',agent:'Mary Hammoud',date:'2026-07-02',type:'Unknown',s1:83,s2:83,s3:100,overall:89,pt:'Transactional Discovery',st:'Add advisory probing',risk:'Low'},
+  {id:'C016',agent:'Lily Graciano',date:'2026-07-02',type:'Unknown',s1:100,s2:100,s3:100,overall:100,pt:'None',st:'Benchmark call',risk:'Low'},
+  {id:'C017',agent:'Katina Astles',date:'2026-07-02',type:'Unknown',s1:100,s2:67,s3:75,overall:81,pt:'Passive Ownership',st:'Increase ownership',risk:'Medium'},
+  {id:'C018',agent:'Karen Price',date:'2026-07-02',type:'Unknown',s1:50,s2:33,s3:75,overall:53,pt:'Poor Discovery',st:'Validate before advising',risk:'High'},
+  {id:'C019',agent:'Aisha Bowie',date:'2026-07-02',type:'Unknown',s1:100,s2:100,s3:100,overall:100,pt:'None',st:'Benchmark recovery call',risk:'Low'},
+  {id:'C020',agent:'Bianca Ceinar',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:100,overall:83,pt:'Inconsistent Ownership',st:'Own earlier',risk:'Low'},
+  {id:'C021',agent:'Bianca Ceinar',date:'2026-07-02',type:'Unknown',s1:100,s2:100,s3:100,overall:100,pt:'None',st:'Benchmark wellbeing call',risk:'Low'},
+  {id:'C022',agent:'Bo Plicharoensuk',date:'2026-07-02',type:'Unknown',s1:67,s2:33,s3:75,overall:58,pt:'Risk Guidance',st:'Avoid workarounds',risk:'High'},
+  {id:'C023',agent:'Bo Plicharoensuk',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:100,overall:83,pt:'Passive Support',st:'Own follow-up',risk:'Low'},
+  {id:'C024',agent:'David Bell',date:'2026-07-02',type:'Unknown',s1:100,s2:100,s3:100,overall:100,pt:'None',st:'Benchmark consultative call',risk:'Low'},
+  {id:'C025',agent:'David Bell',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:75,overall:75,pt:'Rushed Clarity',st:'Simplify early',risk:'Medium'},
+  {id:'C026',agent:'Khushboo Italiya',date:'2026-07-02',type:'Unknown',s1:83,s2:83,s3:75,overall:81,pt:'Low Ownership',st:'Give recommendations',risk:'Medium'},
+  {id:'C027',agent:'Khushboo Italiya',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:75,overall:75,pt:'Limited Solutioning',st:'Add support pathways',risk:'Medium'},
+  {id:'C028',agent:'Mignionne Fernandes',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:50,overall:67,pt:'Weak Closing',st:'Add reassurance',risk:'Medium'},
+  {id:'C029',agent:'Mignionne Fernandes',date:'2026-07-02',type:'Unknown',s1:83,s2:83,s3:100,overall:89,pt:'Weak Framing',st:'Add structure',risk:'Low'},
+  {id:'C030',agent:'Rhea Kapoor',date:'2026-07-02',type:'Unknown',s1:67,s2:33,s3:50,overall:50,pt:'No Ownership',st:'Build coaching approach',risk:'High'},
+  {id:'C031',agent:'Rhea Kapoor',date:'2026-07-02',type:'Unknown',s1:67,s2:33,s3:50,overall:50,pt:'Clarity Breakdown',st:'Slow + structure',risk:'High'},
+  {id:'C032',agent:'Khushboo Italiya',date:'2026-07-02',type:'Unknown',s1:83,s2:67,s3:75,overall:75,pt:'Passive Support',st:'Structured intervention',risk:'Medium'},
+];
+
+const SS = ['s1','s2','s3'];
+let activeType = 'all', activeRisk = 'all';
+
+function getFiltered() {
+  return RAW.filter(d =>
+    (activeType === 'all' || d.type === activeType) &&
+    (activeRisk === 'all' || d.risk === activeRisk)
+  );
+}
+
+function avg(arr, key) {
+  const vals = arr.map(d => d[key]).filter(v => v !== null && v !== undefined);
+  return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : null;
+}
+
+function groupBy(arr, key) {
+  const map = {};
+  arr.forEach(d => { const k = d[key]; if (!map[k]) map[k] = []; map[k].push(d); });
+  return map;
+}
+
+function sc(v) {
+  if (v === null || v === undefined) return `<span class="sc sc-n">—</span>`;
+  const cls = v >= 80 ? 'sc-g' : v >= 60 ? 'sc-a' : 'sc-r';
+  return `<span class="sc ${cls}">${Math.round(v)}%</span>`;
+}
+
+function qualityPill(risk) {
+  const q = risk === 'Low' ? 'High' : risk === 'High' ? 'Low' : 'Medium';
+  const cls = risk === 'Low' ? 'r-low' : risk === 'High' ? 'r-high' : 'r-med';
+  return `<span class="risk ${cls}">${q}</span>`;
+}
+
+function barColor(v) { return v >= 80 ? '#16A34A' : v >= 60 ? '#D97706' : '#DC2626'; }
+
+function isPositiveTheme(t) {
+  return /strong|proactive|personalised|benchmark/i.test(t);
+}
+function isNegativeTheme(t) {
+  return /no |poor|weak|low|risk|unclear|passive|inconsistent|rushed|transactional|limited|shallow/i.test(t);
+}
+
+function render() {
+  const data = getFiltered();
+  const n = data.length;
+
+  // Cards
+  const teamAvg = avg(data, 'overall');
+  document.getElementById('card-avg').textContent = teamAvg !== null ? teamAvg + '%' : '—';
+  document.getElementById('card-avg-sub').textContent = n + ' evaluations';
+  const low = data.filter(d => d.risk === 'Low').length;
+  const med = data.filter(d => d.risk === 'Medium').length;
+  const high = data.filter(d => d.risk === 'High').length;
+  document.getElementById('card-low').textContent = low;
+  document.getElementById('card-med').textContent = med;
+  document.getElementById('card-high').textContent = high;
+  document.getElementById('card-low-sub').textContent = 'calls — Green';
+  document.getElementById('card-med-sub').textContent = 'calls — Amber';
+  document.getElementById('card-high-sub').textContent = 'calls — Red';
+
+  // Heatmap
+  const byAdvisor = groupBy(data, 'agent');
+  const names = Object.keys(byAdvisor).sort((a, b) => avg(byAdvisor[b], 'overall') - avg(byAdvisor[a], 'overall'));
+  const tbody = document.getElementById('heatmap-body');
+  tbody.innerHTML = '';
+
+  names.forEach(name => {
+    const rows = byAdvisor[name];
+    const ov = avg(rows, 'overall');
+    const sAvgs = SS.map(s => avg(rows, s));
+    const worstRisk = rows.some(r => r.risk === 'High') ? 'High' : rows.some(r => r.risk === 'Medium') ? 'Medium' : 'Low';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="advisor-name">${name}</span></td>
+      <td style="text-align:center"><span class="calls-badge">${rows.length}</span></td>
+      <td>${sc(ov)}</td>
+      ${sAvgs.map(v => `<td>${sc(v)}</td>`).join('')}
+      <td>${qualityPill(worstRisk)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const avgRow = document.createElement('tr');
+  avgRow.className = 'avg-row';
+  const teamSAvgs = SS.map(s => avg(data, s));
+  avgRow.innerHTML = `<td colspan="2">TEAM AVERAGE</td><td>${sc(teamAvg)}</td>${teamSAvgs.map(v => `<td>${sc(v)}</td>`).join('')}<td></td>`;
+  tbody.appendChild(avgRow);
+
+  // Themes
+  const counts = {}, types = {};
+  data.forEach(d => {
+    [d.pt].filter(t => t && t !== 'None').forEach(t => {
+      counts[t] = (counts[t] || 0) + 1;
+      types[t] = isPositiveTheme(t) ? 'g' : isNegativeTheme(t) ? 'r' : 'a';
+    });
+  });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  document.getElementById('themes-panel').innerHTML = sorted.map(([theme, count]) =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;padding-bottom:7px;border-bottom:1px solid #F3F4F6">
+      <div style="flex:1"><span class="theme-tag theme-${types[theme]}">${theme}</span></div>
+      <div style="font-size:11px;color:#6B7280">${count} call${count > 1 ? 's' : ''}</div>
+      <div style="width:50px;background:#F3F4F6;border-radius:3px;height:5px;overflow:hidden">
+        <div style="width:${Math.round((count/n)*100)}%;height:100%;background:${types[theme]==='g'?'#16A34A':types[theme]==='r'?'#DC2626':'#D97706'};border-radius:3px"></div>
+      </div>
+    </div>`).join('');
+
+  // Call type bar chart
+  const byType = groupBy(data, 'type');
+  document.getElementById('calltype-panel').innerHTML = Object.entries(byType)
+    .sort((a, b) => avg(b[1], 'overall') - avg(a[1], 'overall'))
+    .map(([type, rows]) => {
+      const v = avg(rows, 'overall');
+      return `<div class="bar-row">
+        <div class="bar-lbl">${type}</div>
+        <div class="bar-wrap"><div class="bar" style="width:${v}%;background:${barColor(v)}">${v}%</div></div>
+        <div class="bar-val" style="color:${barColor(v)}">${rows.length}</div>
+      </div>`;
+    }).join('');
+
+  // Call log
+  document.getElementById('log-body').innerHTML = [...data]
+    .sort((a, b) => b.date.localeCompare(a.date) || b.overall - a.overall)
+    .map(d => {
+      const scoreCls = d.overall >= 80 ? 'sc-g' : d.overall >= 60 ? 'sc-a' : 'sc-r';
+      const q = d.risk === 'Low' ? 'High' : d.risk === 'High' ? 'Low' : 'Medium';
+      const qCls = d.risk === 'Low' ? 'r-low' : d.risk === 'High' ? 'r-high' : 'r-med';
+      const nameParts = d.agent.split(' ');
+      const short = nameParts[0] + ' ' + nameParts[nameParts.length - 1];
+      return `<tr>
+        <td style="color:#6B7280">${d.id}</td>
+        <td style="font-weight:600;color:#1E3A5F">${short}</td>
+        <td style="color:#6B7280">${d.type}</td>
+        <td style="color:#6B7280">${d.date.slice(5)}</td>
+        <td><span class="sc ${scoreCls}">${d.overall}%</span></td>
+        <td><span class="risk ${qCls}">${q}</span></td>
+      </tr>`;
+    }).join('');
+}
+
+function setFilter(filterType, value, btn) {
+  if (filterType === 'type') {
+    activeType = value;
+    document.querySelectorAll('.filters .filter-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'type'")) {
+        b.classList.remove('active');
+      }
+    });
+  } else {
+    activeRisk = value;
+    document.querySelectorAll('.filters .filter-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'risk'")) {
+        b.classList.remove('active');
+      }
+    });
+  }
+  btn.classList.add('active');
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
