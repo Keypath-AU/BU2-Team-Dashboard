@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BU2 · Enrolment Tracker — 16 Jul 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh}
+.tl-header{background:#161b27;border-bottom:1px solid #1e2d45;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tl-title{font-size:16px;font-weight:700;color:#e2e8f0;letter-spacing:.3px}
+.tl-sub{font-size:11px;color:#475569;margin-top:2px}
+.tl-badges{display:flex;gap:8px;align-items:center}
+.tl-badge{background:#1e2d45;color:#94a3b8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+.tl-date{background:#1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px}
+.kpi-section{padding:20px 24px 4px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c-ind::before{background:#6366f1}
+.kpi-card.c-cur::before{background:#06b6d4}
+.kpi-card.c-pct::before{background:#10b981}
+.kpi-card.c-ccc::before{background:#f59e0b}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:6px}
+.kpi-value{font-size:32px;font-weight:800;line-height:1;color:#e2e8f0}
+.kpi-value.good{color:#10b981}.kpi-value.warn{color:#f59e0b}.kpi-value.bad{color:#f43f5e}
+.kpi-sub{font-size:11px;color:#475569;margin-top:5px}
+.kpi-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px}
+.partner-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.pcard{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:18px 20px}
+.pcard-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pcard-name{font-size:13px;font-weight:700;color:#e2e8f0}
+.pcard-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pb-ecu{background:#312e81;color:#a5b4fc}
+.pb-vu{background:#0c4a6e;color:#7dd3fc}
+.pb-uc{background:#064e3b;color:#6ee7b7}
+.pcard-metrics{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.pm-label{font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.pm-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.pm-value.good{color:#10b981}.pm-value.warn{color:#f59e0b}.pm-value.bad{color:#f43f5e}
+.pcard-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:12px;overflow:hidden}
+.section-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;padding:0 24px 10px}
+.filter-bar{display:flex;gap:8px;padding:0 24px 14px;flex-wrap:wrap;align-items:center}
+.fbtn{background:#161b27;border:1px solid #1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:.15s}
+.fbtn:hover{border-color:#475569;color:#94a3b8}
+.fbtn.act{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.tbl-wrap{padding:0 24px 32px;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:#0d1117;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;text-align:right;border-bottom:2px solid #1e2d45;white-space:nowrap;cursor:pointer;user-select:none}
+.tbl th:hover{color:#94a3b8}
+.tbl th.left{text-align:left}
+.tbl th .sort-arrow{margin-left:4px;opacity:.4;font-size:9px}
+.tbl th.sorted .sort-arrow{opacity:1;color:#6366f1}
+.tbl td{padding:10px 12px;border-bottom:1px solid #0d1117;text-align:right;color:#e2e8f0;font-weight:600;vertical-align:middle}
+.tbl td.left{text-align:left;color:#cbd5e1;font-weight:500}
+.tbl tr.adv-row{cursor:pointer;transition:background .1s}
+.tbl tr.adv-row:hover td{background:#161b27}
+.tbl tr.adv-row.expanded td{background:#161b27;border-bottom:none}
+.tbl tfoot td{border-top:2px solid #1e2d45;background:#0d1117;font-weight:700;color:#94a3b8;font-size:12px}
+.lb-partner{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:700;display:inline-block}
+.lbp-ECU{background:#312e81;color:#a5b4fc}
+.lbp-VU{background:#0c4a6e;color:#7dd3fc}
+.lbp-UC{background:#064e3b;color:#6ee7b7}
+.bar-bg{background:#1e2d45;border-radius:3px;height:5px;overflow:hidden;margin-top:4px;width:80px}
+.bar-fill{height:5px;border-radius:3px}
+.chev{display:inline-block;font-size:10px;color:#2d3f5e;transition:transform .2s;margin-left:6px}
+.expanded .chev{transform:rotate(90deg)}
+.expand-row td{padding:0!important;border-bottom:1px solid #1e2d45!important}
+.expand-panel{background:#0d1117;padding:16px 24px;display:none}
+.expand-row.open .expand-panel{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.ep-section{flex:1;min-width:180px}
+.ep-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:10px}
+.ep-metrics{display:flex;gap:20px}
+.ep-metric{}
+.ep-label{font-size:9px;color:#475569;font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.ep-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.ep-sub{font-size:10px;color:#475569;margin-top:2px}
+.ep-divider{width:1px;background:#1e2d45;flex-shrink:0}
+.show-more-row td{background:#0d1117;border-bottom:none;text-align:center;padding:10px}
+.show-more-btn{background:transparent;border:1px solid #1e2d45;color:#475569;font-size:11px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+.show-more-btn:hover{border-color:#475569;color:#94a3b8}
+.no-data{padding:40px;text-align:center;color:#475569;font-size:13px}
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .partner-row{grid-template-columns:1fr}
+  .pcard-metrics{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="tl-header">
+  <div>
+    <div class="tl-title">BU2 · Enrolment Tracker</div>
+    <div class="tl-sub">Census incentive & start target tracking · Next term enrolments · Cohort conversion</div>
+  </div>
+  <div class="tl-badges">
+    <span class="tl-badge">TRACKER</span>
+    <span class="tl-date">16 Jul 2026</span>
+  </div>
+</div>
+
+<div class="kpi-section">
+  <div class="kpi-row" id="kpi-cards"></div>
+  <div class="section-hd">Partner Summary</div>
+  <div class="partner-row" id="partner-cards"></div>
+  <div class="section-hd" style="margin-top:4px">Advisor Detail</div>
+</div>
+
+<div class="filter-bar" id="filters"></div>
+
+<div class="tbl-wrap">
+  <table class="tbl">
+    <thead id="tbl-head"></thead>
+    <tbody id="tbl-body"></tbody>
+    <tfoot id="tbl-foot"></tfoot>
+  </table>
+</div>
+
+<script>
+const ADVISORS_RAW = [
+  // ECU
+  {name:'Nova Brownlie',             partner:'ECU', pool:253, current:178, rego:5, reEng:36, trep:41, outsideTrep:6},
+  {name:'Mia Yourn',                 partner:'ECU', pool:214, current:168, rego:1, reEng:0, trep:1, outsideTrep:6},
+  {name:'Lily Graciano',             partner:'ECU', pool:226, current:140, rego:4, reEng:25, trep:29, outsideTrep:1},
+  {name:'Katina Astles',             partner:'ECU', pool:241, current:149, rego:7, reEng:26, trep:33, outsideTrep:9},
+  {name:'Nequila Vincent',           partner:'ECU', pool:244, current:166, rego:5, reEng:32, trep:37, outsideTrep:14},
+  {name:'Sofie Katsipodas',          partner:'ECU', pool:255, current:184, rego:1, reEng:26, trep:27, outsideTrep:7},
+  // VU
+  {name:'Aisha Bowie',               partner:'VU', pool:321, current:234, rego:9, reEng:31, trep:40, outsideTrep:24},
+  {name:'Annaliese Giegerl',         partner:'VU', pool:318, current:246, rego:3, reEng:15, trep:18, outsideTrep:19},
+  {name:'Karen Price',               partner:'VU', pool:336, current:281, rego:6, reEng:27, trep:33, outsideTrep:15},
+  {name:'Mary Hammoud',              partner:'VU', pool:277, current:235, rego:3, reEng:16, trep:19, outsideTrep:7},
+  // UC
+  {name:'Jesse Smith',               partner:'UC', pool:291, current:200, rego:4, reEng:40, trep:44, outsideTrep:7},
+  {name:'Mignionne Fernandes',       partner:'UC', pool:238, current:178, rego:3, reEng:28, trep:31, outsideTrep:7},
+  {name:'Bo Plicharoensuk',          partner:'UC', pool:300, current:223, rego:9, reEng:45, trep:54, outsideTrep:9},
+  {name:'Rhea Kapoor',               partner:'UC', pool:302, current:202, rego:16, reEng:58, trep:74, outsideTrep:5},
+  {name:'Bianca Ceinar',             partner:'UC', pool:300, current:240, rego:7, reEng:34, trep:41, outsideTrep:11},
+  {name:'Khushboo Italiya',          partner:'UC', pool:303, current:218, rego:9, reEng:49, trep:58, outsideTrep:9},
+  {name:'David Bell',                partner:'UC', pool:291, current:190, rego:25, reEng:72, trep:97, outsideTrep:2},
+];
+
+const PARTNER_META = {
+  ECU: {label:'Edith Cowan University', badgeCls:'pb-ecu', lbCls:'lbp-ECU', barClr:'#6366f1'},
+  VU:  {label:'Victoria University',    badgeCls:'pb-vu',  lbCls:'lbp-VU',  barClr:'#06b6d4'},
+  UC:  {label:'University of Canberra', badgeCls:'pb-uc',  lbCls:'lbp-UC',  barClr:'#10b981'},
+};
+
+const PARTNER_TARGETS = { ECU: 1006, VU: 935,  UC: 1447 };
+const START_TARGETS   = { ECU: 1087, VU: 1010, UC: 1590 };
+const INDIVIDUAL_TARGETS = {"Katina Astles": 171, "Lily Graciano": 160, "Mia Yourn": 155, "Nequila Vincent": 174, "Nova Brownlie": 170, "Sofie Katsipodas": 176, "Aisha Bowie": 244, "Annaliese Giegerl": 240, "Karen Price": 249, "Mary Hammoud": 202, "Bianca Ceinar": 214, "Bo Plicharoensuk": 209, "David Bell": 215, "Jesse Smith": 211, "Khushboo Italiya": 219, "Mignionne Fernandes": 171, "Rhea Kapoor": 208};
+const INDIVIDUAL_START_TARGETS = {"Nova Brownlie": 185, "Mia Yourn": 169, "Lily Graciano": 174, "Katina Astles": 186, "Nequila Vincent": 190, "Sofie Katsipodas": 192, "Aisha Bowie": 266, "Annaliese Giegerl": 261, "Karen Price": 271, "Mary Hammoud": 220, "Jesse Smith": 234, "Mignionne Fernandes": 189, "Bo Plicharoensuk": 231, "Rhea Kapoor": 230, "Bianca Ceinar": 237, "Khushboo Italiya": 242, "David Bell": 238};
+
+const ADVISORS = ADVISORS_RAW.map(a => {
+  const incentiveTgt = INDIVIDUAL_TARGETS[a.name] || 0;
+  const ccc          = a.current / a.pool;
+  const pctInc       = incentiveTgt ? a.current / incentiveTgt : 0;
+  const startTgt     = INDIVIDUAL_START_TARGETS[a.name] || 0;
+  const neededStart  = startTgt ? Math.max(0, startTgt - a.current) : 0;
+  const convStart    = (a.trep && neededStart) ? neededStart / a.trep : (neededStart === 0 ? 0 : null);
+  return {...a, incentiveTgt, startTgt, ccc, pctInc, neededStart, convStart};
+});
+
+function ragCCC(v)        { return v >= 0.8 ? '#10b981' : v >= 0.65 ? '#f59e0b' : '#f43f5e'; }
+function ragCCCCls(v)     { return v >= 0.8 ? 'good'    : v >= 0.65 ? 'warn'    : 'bad'; }
+function ragOutside(n)    { return n >= 10  ? '#f43f5e' : n >= 4    ? '#f59e0b' : '#10b981'; }
+function fmt1(v)          { return (v * 100).toFixed(1) + '%'; }
+
+let activeFilter = 'ALL';
+let sortCol      = 'ccc';
+let sortDir      = -1;
+let expandedRow  = null;
+let showAll      = false;
+const PAGE_SIZE  = 10;
+
+function renderKPIs() {
+  const all      = ADVISORS;
+  const totCur   = all.reduce((s,a) => s + a.current, 0);
+  const totPool  = all.reduce((s,a) => s + a.pool,    0);
+  const totTrep  = all.reduce((s,a) => s + a.trep,    0);
+  const ccc      = totCur / totPool;
+  const totTarget = Object.values(PARTNER_TARGETS).reduce((s,v) => s+v, 0);
+  const pctIncAll = totTarget ? totCur / totTarget : 0;
+  const cards = [
+    { cls:'c-cur', label:'Total T4 Enrolled', value: totCur.toLocaleString(),
+      sub: `across ${all.length} advisors`,
+      barW: Math.min(ccc*100,100), barClr:'#06b6d4' },
+    { cls:'c-pct', label:'% to Incentive Target', value: fmt1(pctIncAll), valueCls: ragCCCCls(pctIncAll),
+      sub: `${totCur.toLocaleString()} of ${totTarget.toLocaleString()} target`,
+      barW: Math.min(pctIncAll*100,100), barClr: ragCCC(pctIncAll) },
+    { cls:'c-ind', label:'Total TREP', value: totTrep.toLocaleString(),
+      sub: `${all.reduce((s,a)=>s+a.rego,0)} rego · ${all.reduce((s,a)=>s+a.reEng,0)} re-eng`,
+      barW: 100, barClr:'#f59e0b' },
+    { cls:'c-ccc', label:'Eligible Pool Conversion', value: fmt1(ccc), valueCls: ragCCCCls(ccc),
+      sub: `${totCur.toLocaleString()} enrolled of ${totPool.toLocaleString()} eligible`,
+      barW: Math.min(ccc*100,100), barClr: ragCCC(ccc) },
+  ];
+  document.getElementById('kpi-cards').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value${c.valueCls?' '+c.valueCls:''}">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${c.barW}%;background:${c.barClr}"></div></div>
+    </div>`).join('');
+}
+
+function renderPartners() {
+  const html = ['ECU','VU','UC'].map(p => {
+    const advs = ADVISORS.filter(a => a.partner === p);
+    const cur  = advs.reduce((s,a) => s + a.current, 0);
+    const pool = advs.reduce((s,a) => s + a.pool, 0);
+    const trep = advs.reduce((s,a) => s + a.trep, 0);
+    const ot   = advs.reduce((s,a) => s + a.outsideTrep, 0);
+    const ccc  = cur / pool;
+    const incTgt      = PARTNER_TARGETS[p] || 0;
+    const startTgt    = START_TARGETS[p]   || 0;
+    const pctInc      = incTgt   ? cur / incTgt   : 0;
+    const neededInc   = incTgt   ? Math.max(0, incTgt   - cur) : 0;
+    const neededStart = startTgt ? Math.max(0, startTgt - cur) : 0;
+    const convNeeded  = (trep && neededStart) ? neededStart / trep : (neededStart === 0 ? 0 : null);
+    const convClr     = convNeeded === null ? '#475569' : convNeeded === 0 ? '#10b981' : convNeeded <= 0.5 ? '#10b981' : convNeeded <= 0.75 ? '#f59e0b' : '#f43f5e';
+    const convTxt     = convNeeded === null ? '—' : convNeeded === 0 ? '0%' : convNeeded >= 1 ? '100%+' : fmt1(convNeeded);
+    const meta = PARTNER_META[p];
+    const row = (label, val, valClr, sub) => `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="font-size:10px;color:#64748b">${label}${sub ? `<span style="color:#475569;font-size:9px;margin-left:4px">${sub}</span>` : ''}</div>
+        <div style="font-size:15px;font-weight:700;color:${valClr}">${val}</div>
+      </div>`;
+    return `
+    <div class="pcard">
+      <div class="pcard-hd">
+        <div class="pcard-name">${meta.label}</div>
+        <span class="pcard-badge ${meta.badgeCls}">${p}</span>
+      </div>
+      ${row('Current Enrolments', cur.toLocaleString(), '#e2e8f0')}
+      ${row('Incentive Target', incTgt.toLocaleString(), '#475569')}
+      ${row('Needed to reach Incentive', neededInc > 0 ? neededInc.toLocaleString() : '✓ Reached', neededInc > 0 ? '#f59e0b' : '#10b981')}
+      ${row('% Incentive Target', fmt1(pctInc), ragCCC(pctInc))}
+      ${row('Start Target', startTgt.toLocaleString(), '#475569')}
+      ${row('Needed to reach Start Target', neededStart > 0 ? neededStart.toLocaleString() : '✓ Reached', neededStart > 0 ? '#f43f5e' : '#10b981')}
+      ${row('TREP', trep.toLocaleString(), '#f59e0b')}
+      ${row('Conv. needed to hit Start Target', convTxt, convClr, `(${trep} TREP)`)}
+      ${row('Pool Conversion', fmt1(ccc), ragCCC(ccc))}
+      <div class="pcard-bar" style="margin-top:10px">
+        <div style="height:3px;border-radius:2px;background:${meta.barClr};width:${Math.min(pctInc*100,100)}%"></div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:#475569">${advs.length} advisors · Eligible pool: ${pool.toLocaleString()} · Outside TREP no call: <span style="color:${ragOutside(ot)};font-weight:700">${ot}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('partner-cards').innerHTML = html;
+}
+
+function renderFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  ['ALL','ECU','VU','UC'].forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (activeFilter === p ? ' act' : '');
+    b.textContent = p === 'ALL' ? 'All Partners' : p;
+    b.onclick = () => { activeFilter = p; showAll = false; expandedRow = null; renderFilters(); renderTable(); };
+    el.appendChild(b);
+  });
+}
+
+const COLS = [
+  {key:null,           label:'',                    th:'left',  nosort:true},
+  {key:'name',         label:'Advisor',             th:'left'},
+  {key:'partner',      label:'Partner',             th:'left'},
+  {key:'current',      label:'Enrolled',            th:'right'},
+  {key:'neededStart',  label:'Needed to hit Start', th:'right'},
+  {key:'trep',         label:'TREP',                th:'right'},
+  {key:'convStart',    label:'Conv. to hit Start',  th:'right'},
+  {key:'ccc',          label:'EP Conv.',            th:'right'},
+];
+
+function renderTableHead() {
+  document.getElementById('tbl-head').innerHTML = `<tr>${COLS.map(c => {
+    if(c.nosort) return `<th class="${c.th}"></th>`;
+    const sorted = sortCol === c.key;
+    const arrow  = sorted ? (sortDir === -1 ? '▼' : '▲') : '▼';
+    return `<th class="${c.th}${sorted?' sorted':''}" onclick="setSort('${c.key}')">${c.label}<span class="sort-arrow">${arrow}</span></th>`;
+  }).join('')}</tr>`;
+}
+
+function setSort(key) {
+  if(sortCol === key) sortDir *= -1; else { sortCol = key; sortDir = -1; }
+  expandedRow = null; renderTable();
+}
+
+function renderTable() {
+  renderTableHead();
+  const sorted = ADVISORS
+    .filter(a => activeFilter === 'ALL' || a.partner === activeFilter)
+    .sort((a,b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if(typeof av === 'string') return sortDir * av.localeCompare(bv);
+      return sortDir * (av - bv);
+    });
+  const isAll   = activeFilter === 'ALL';
+  const visible = (isAll && !showAll) ? sorted.slice(0, PAGE_SIZE) : sorted;
+  const hidden  = sorted.length - visible.length;
+  let rows = '';
+  visible.forEach((a, i) => {
+    const cccClr  = ragCCC(a.ccc);
+    const meta    = PARTNER_META[a.partner];
+    const isExp   = expandedRow === a.name;
+    const badge   = `<span class="lb-partner ${meta.lbCls}">${a.partner}</span>`;
+    const neededClr = a.neededStart === 0 ? '#10b981' : '#f43f5e';
+    const neededTxt = a.neededStart === 0 ? '✓' : a.neededStart;
+    const cs = a.convStart;
+    const csClr = cs === null ? '#475569' : cs === 0 ? '#10b981' : cs <= 0.5 ? '#10b981' : cs <= 0.75 ? '#f59e0b' : '#f43f5e';
+    const csTxt = cs === null ? '—' : cs === 0 ? '0%' : cs >= 1 ? '100%+' : fmt1(cs);
+    rows += `
+    <tr class="adv-row${isExp?' expanded':''}" onclick="toggleRow('${a.name.replace(/'/g,"\\'")}')">
+      <td class="left" style="color:#475569;font-size:11px;width:28px">${i+1}</td>
+      <td class="left">${a.name}<span class="chev">▶</span></td>
+      <td class="left">${badge}</td>
+      <td style="color:#06b6d4">${a.current}</td>
+      <td style="color:${neededClr};font-weight:700">${neededTxt}</td>
+      <td style="color:#f59e0b;font-weight:700">${a.trep}</td>
+      <td style="color:${csClr};font-weight:700">${csTxt}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(a.ccc*100,100)}%;background:${cccClr}"></div></div>
+          <span style="color:${cccClr};min-width:42px;text-align:right">${fmt1(a.ccc)}</span>
+        </div>
+      </td>
+    </tr>
+    <tr class="expand-row${isExp?' open':''}">
+      <td colspan="8"><div class="expand-panel">${buildExpandPanel(a)}</div></td>
+    </tr>`;
+  });
+  if(hidden > 0) {
+    rows += `<tr class="show-more-row"><td colspan="8">
+      <button class="show-more-btn" onclick="showAllRows()">▾ Show ${hidden} more advisors</button>
+    </td></tr>`;
+  }
+  if(!sorted.length) rows = `<tr><td colspan="8" class="no-data">No advisors match the selected filter.</td></tr>`;
+  const totPool = sorted.reduce((s,a) => s + a.pool,    0);
+  const totCur  = sorted.reduce((s,a) => s + a.current, 0);
+  const totTrep = sorted.reduce((s,a) => s + a.trep,    0);
+  const totNeed = sorted.reduce((s,a) => s + a.neededStart, 0);
+  const totCCC  = totPool ? totCur / totPool : 0;
+  const cccClr  = ragCCC(totCCC);
+  const totConvStart = (totTrep && totNeed) ? totNeed / totTrep : 0;
+  document.getElementById('tbl-body').innerHTML = rows;
+  document.getElementById('tbl-foot').innerHTML = `
+    <tr>
+      <td class="left" colspan="3">Total / ${sorted.length} advisors</td>
+      <td style="color:#06b6d4">${totCur.toLocaleString()}</td>
+      <td style="color:#334155;font-size:10px">—</td>
+      <td style="color:#f59e0b">${totTrep}</td>
+      <td style="color:#334155;font-size:10px">—</td>
+      <td style="text-align:right;color:${cccClr}">${fmt1(totCCC)}</td>
+    </tr>`;
+}
+
+function showAllRows() { showAll = true; renderTable(); }
+
+function buildExpandPanel(a) {
+  const indivIncTgt   = INDIVIDUAL_TARGETS[a.name] || 0;
+  const pctInc      = indivIncTgt ? a.current / indivIncTgt : null;
+  const neededInc   = indivIncTgt ? Math.max(0, indivIncTgt - a.current) : null;
+  const neededStart = a.neededStart;
+  const cs          = a.convStart;
+  const csClr = cs === null ? '#475569' : cs === 0 ? '#10b981' : cs <= 0.5 ? '#10b981' : cs <= 0.75 ? '#f59e0b' : '#f43f5e';
+  const csTxt = cs === null ? '—' : cs === 0 ? '0%' : cs >= 1 ? '100%+' : fmt1(cs);
+  const otClr = ragOutside(a.outsideTrep);
+  const row = (label, val, valClr, sub) => `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <div style="font-size:10px;color:#64748b">${label}${sub ? `<span style="color:#475569;font-size:9px;margin-left:4px">${sub}</span>` : ''}</div>
+      <div style="font-size:15px;font-weight:700;color:${valClr}">${val}</div>
+    </div>`;
+  const regoBarW = a.trep ? Math.round(a.rego / a.trep * 100) : 0;
+  return `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:4px 0">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">TARGET TRACKER</div>
+        ${row('Current Enrolments', a.current.toLocaleString(), '#e2e8f0')}
+        ${row('Incentive Target', indivIncTgt ? indivIncTgt.toLocaleString() : '—', indivIncTgt ? '#e2e8f0' : '#475569')}
+        ${row('Needed to reach Incentive', indivIncTgt ? (neededInc > 0 ? neededInc.toLocaleString() : '✓ Reached') : '—', indivIncTgt ? (neededInc > 0 ? '#f43f5e' : '#10b981') : '#475569')}
+        ${row('% Incentive Target', indivIncTgt ? fmt1(pctInc) : '—', indivIncTgt ? ragCCC(pctInc) : '#475569')}
+        ${row('Start Target', (INDIVIDUAL_START_TARGETS[a.name] || 0) ? (INDIVIDUAL_START_TARGETS[a.name]).toLocaleString() : '—', '#475569')}
+        ${row('Needed to reach Start Target', neededStart > 0 ? neededStart.toLocaleString() : '✓ Reached', neededStart > 0 ? '#f43f5e' : '#10b981')}
+        ${row('TREP', a.trep.toLocaleString(), '#f59e0b', 'Opportunity Remaining')}
+        ${row('Conv. needed to hit Start Target', cs !== null ? csTxt : '—', csClr)}
+        ${row('Pool Conversion', fmt1(a.ccc), ragCCC(a.ccc))}
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">TREP BREAKDOWN</div>
+        <div style="padding:8px 0">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Rego <span style="color:#475569;font-size:9px">Enrolled · not yet in T4</span></div>
+            <div style="font-size:15px;font-weight:700;color:#6366f1">${a.rego}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Re-Eng <span style="color:#475569;font-size:9px">Not active · re-engage</span></div>
+            <div style="font-size:15px;font-weight:700;color:#06b6d4">${a.reEng}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Total TREP</div>
+            <div style="font-size:15px;font-weight:700;color:#f59e0b">${a.trep}</div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <div style="flex:1;height:4px;background:#1e2d45;border-radius:2px;overflow:hidden">
+              <div style="height:4px;width:${regoBarW}%;background:#6366f1;border-radius:2px"></div>
+            </div>
+          </div>
+          <div style="margin-top:4px;display:flex;gap:12px">
+            <span style="font-size:10px;color:#6366f1">${regoBarW}% rego</span>
+            <span style="font-size:10px;color:#06b6d4">${100-regoBarW}% re-eng</span>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">OUTSIDE TREP — NO CALL</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Students</div>
+            <div style="font-size:15px;font-weight:700;color:${otClr}">${a.outsideTrep}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">% of Pool</div>
+            <div style="font-size:15px;font-weight:700;color:${otClr}">${a.pool ? (a.outsideTrep/a.pool*100).toFixed(1) : 0}%</div>
+          </div>
+          <div style="font-size:9px;color:#475569;margin-top:6px">Not enrolled · known reason · last attempt before 22 May 2026</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleRow(name) {
+  expandedRow = expandedRow === name ? null : name;
+  renderTable();
+}
+
+renderKPIs();
+renderPartners();
+renderFilters();
+renderTable();
+</script>
+</body>
+</html>
