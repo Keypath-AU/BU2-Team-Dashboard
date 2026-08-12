@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BU2 · Enrolment Tracker — SB7 — 12 Aug 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh}
+.tl-header{background:#161b27;border-bottom:1px solid #1e2d45;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tl-title{font-size:16px;font-weight:700;color:#e2e8f0;letter-spacing:.3px}
+.tl-sub{font-size:11px;color:#475569;margin-top:2px}
+.tl-badges{display:flex;gap:8px;align-items:center}
+.tl-badge{background:#1e2d45;color:#94a3b8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+.tl-date{background:#1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px}
+.kpi-section{padding:20px 24px 4px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c-ind::before{background:#6366f1}
+.kpi-card.c-cur::before{background:#06b6d4}
+.kpi-card.c-pct::before{background:#10b981}
+.kpi-card.c-ccc::before{background:#f59e0b}
+.kpi-card.c-tgt::before{background:#ec4899}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:6px}
+.kpi-value{font-size:32px;font-weight:800;line-height:1;color:#e2e8f0}
+.kpi-value.good{color:#10b981}.kpi-value.warn{color:#f59e0b}.kpi-value.bad{color:#f43f5e}
+.kpi-sub{font-size:11px;color:#475569;margin-top:5px}
+.kpi-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px}
+.partner-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.pcard{background:#161b27;border:1px solid #1e2d45;border-radius:10px;padding:18px 20px}
+.pcard-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pcard-name{font-size:13px;font-weight:700;color:#e2e8f0}
+.pcard-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pb-ecu{background:#312e81;color:#a5b4fc}
+.pb-vu{background:#0c4a6e;color:#7dd3fc}
+.pb-uc{background:#064e3b;color:#6ee7b7}
+.pcard-metrics{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.pm-label{font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.pm-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.pm-value.good{color:#10b981}.pm-value.warn{color:#f59e0b}.pm-value.bad{color:#f43f5e}
+.pcard-bar{height:3px;background:#1e2d45;border-radius:2px;margin-top:12px;overflow:hidden}
+.section-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;padding:0 24px 10px}
+.filter-bar{display:flex;gap:8px;padding:0 24px 14px;flex-wrap:wrap;align-items:center}
+.fbtn{background:#161b27;border:1px solid #1e2d45;color:#64748b;font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:.15s}
+.fbtn:hover{border-color:#475569;color:#94a3b8}
+.fbtn.act{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.tbl-wrap{padding:0 24px 32px;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:#0d1117;color:#475569;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;text-align:right;border-bottom:2px solid #1e2d45;white-space:nowrap;cursor:pointer;user-select:none}
+.tbl th:hover{color:#94a3b8}
+.tbl th.left{text-align:left}
+.tbl th .sort-arrow{margin-left:4px;opacity:.4;font-size:9px}
+.tbl th.sorted .sort-arrow{opacity:1;color:#6366f1}
+.tbl td{padding:10px 12px;border-bottom:1px solid #0d1117;text-align:right;color:#e2e8f0;font-weight:600;vertical-align:middle}
+.tbl td.left{text-align:left;color:#cbd5e1;font-weight:500}
+.tbl tr.adv-row{cursor:pointer;transition:background .1s}
+.tbl tr.adv-row:hover td{background:#161b27}
+.tbl tr.adv-row.expanded td{background:#161b27;border-bottom:none}
+.tbl tfoot td{border-top:2px solid #1e2d45;background:#0d1117;font-weight:700;color:#94a3b8;font-size:12px}
+.lb-partner{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:700;display:inline-block}
+.lbp-ECU{background:#312e81;color:#a5b4fc}
+.lbp-VU{background:#0c4a6e;color:#7dd3fc}
+.lbp-UC{background:#064e3b;color:#6ee7b7}
+.bar-bg{background:#1e2d45;border-radius:3px;height:5px;overflow:hidden;margin-top:4px;width:80px}
+.bar-fill{height:5px;border-radius:3px}
+.chev{display:inline-block;font-size:10px;color:#2d3f5e;transition:transform .2s;margin-left:6px}
+.expanded .chev{transform:rotate(90deg)}
+.expand-row td{padding:0!important;border-bottom:1px solid #1e2d45!important}
+.expand-panel{background:#0d1117;padding:16px 24px;display:none}
+.expand-row.open .expand-panel{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.ep-section{flex:1;min-width:180px}
+.ep-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569;margin-bottom:10px}
+.ep-metrics{display:flex;gap:20px}
+.ep-metric{}
+.ep-label{font-size:9px;color:#475569;font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.ep-value{font-size:20px;font-weight:800;color:#e2e8f0}
+.ep-sub{font-size:10px;color:#475569;margin-top:2px}
+.ep-divider{width:1px;background:#1e2d45;flex-shrink:0}
+.show-more-row td{background:#0d1117;border-bottom:none;text-align:center;padding:10px}
+.show-more-btn{background:transparent;border:1px solid #1e2d45;color:#475569;font-size:11px;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer;letter-spacing:.3px;transition:all .15s}
+.show-more-btn:hover{border-color:#475569;color:#94a3b8}
+.no-data{padding:40px;text-align:center;color:#475569;font-size:13px}
+.tf-trep-split{font-size:9px;font-weight:600;margin-top:3px;white-space:nowrap;text-align:right}
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .partner-row{grid-template-columns:1fr}
+  .pcard-metrics{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="tl-header">
+  <div>
+    <div class="tl-title">BU2 · Enrolment Tracker — SB7</div>
+    <div class="tl-sub">Next term enrolments · Cohort conversion · TREP tracking</div>
+  </div>
+  <div class="tl-badges">
+    <span class="tl-badge">SB7 · TRACKER</span>
+    <span class="tl-date">12 Aug 2026</span>
+  </div>
+</div>
+
+<div class="kpi-section">
+  <div class="kpi-row" id="kpi-cards"></div>
+  <div class="section-hd">Partner Summary</div>
+  <div class="partner-row" id="partner-cards"></div>
+  <div class="section-hd" style="margin-top:4px">Advisor Detail</div>
+</div>
+
+<div class="filter-bar" id="filters"></div>
+
+<div class="tbl-wrap">
+  <table class="tbl">
+    <thead id="tbl-head"></thead>
+    <tbody id="tbl-body"></tbody>
+    <tfoot id="tbl-foot"></tfoot>
+  </table>
+</div>
+
+<script>
+const ADVISORS_RAW = [
+  // ECU
+  {name:'Nova Brownlie',             partner:'ECU', pool:232, current:191, rego:11, reEng:8,  trep:19, outsideTrep:4},
+  {name:'Mia Yourn',                 partner:'ECU', pool:236, current:168, rego:21, reEng:2,  trep:23, outsideTrep:4},
+  {name:'Lily Graciano',             partner:'ECU', pool:213, current:159, rego:11, reEng:22, trep:33, outsideTrep:1},
+  {name:'Katina Astles',             partner:'ECU', pool:207, current:153, rego:4,  reEng:17, trep:21, outsideTrep:7},
+  {name:'Nequila Vincent',           partner:'ECU', pool:234, current:157, rego:30, reEng:40, trep:70, outsideTrep:2},
+  {name:'Sofie Katsipodas',          partner:'ECU', pool:242, current:207, rego:11, reEng:13, trep:24, outsideTrep:0},
+  // VU
+  {name:'Aisha Bowie',               partner:'VU', pool:274, current:216, rego:7,  reEng:26, trep:33, outsideTrep:13},
+  {name:'Annaliese Giegerl',         partner:'VU', pool:287, current:239, rego:7,  reEng:18, trep:25, outsideTrep:4},
+  {name:'Karen Price',               partner:'VU', pool:265, current:236, rego:7,  reEng:19, trep:26, outsideTrep:1},
+  {name:'Mary Hammoud',              partner:'VU', pool:263, current:246, rego:4,  reEng:6,  trep:10, outsideTrep:2},
+  // UC
+  {name:'Jesse Smith',               partner:'UC', pool:284, current:215, rego:23, reEng:24, trep:47, outsideTrep:1},
+  {name:'Mignionne Fernandes',       partner:'UC', pool:229, current:175, rego:25, reEng:33, trep:58, outsideTrep:1},
+  {name:'Bo Plicharoensuk',          partner:'UC', pool:284, current:218, rego:29, reEng:31, trep:60, outsideTrep:1},
+  {name:'Rhea Kapoor',               partner:'UC', pool:279, current:219, rego:22, reEng:35, trep:57, outsideTrep:1},
+  {name:'Bianca Ceinar',             partner:'UC', pool:285, current:225, rego:36, reEng:31, trep:67, outsideTrep:4},
+  {name:'Khushboo Italiya',          partner:'UC', pool:272, current:204, rego:40, reEng:35, trep:75, outsideTrep:4},
+  {name:'David Bell',                partner:'UC', pool:270, current:202, rego:26, reEng:41, trep:67, outsideTrep:3},
+];
+
+const PARTNER_META = {
+  ECU: {label:'Edith Cowan University', badgeCls:'pb-ecu', lbCls:'lbp-ECU', barClr:'#6366f1'},
+  VU:  {label:'Victoria University',    badgeCls:'pb-vu',  lbCls:'lbp-VU',  barClr:'#06b6d4'},
+  UC:  {label:'University of Canberra', badgeCls:'pb-uc',  lbCls:'lbp-UC',  barClr:'#10b981'},
+};
+
+const PARTNER_TARGETS = { ECU: 985, VU: 843, UC: 1409 };
+
+// Individual SSA Incentive Targets (set by Spencer, 6 Aug 2026)
+const INCENTIVE_TARGETS = {
+  'Katina Astles':      147,
+  'Lily Graciano':       156,
+  'Mia Yourn':           163,
+  'Nequila Vincent':     168,
+  'Nova Brownlie':       167,
+  'Sofie Katsipodas':    169,
+  'Aisha Bowie':         211,
+  'Annaliese Giegerl':   223,
+  'Karen Price':         209,
+  'Mary Hammoud':        202,
+  'Bianca Ceinar':       211,
+  'Bo Plicharoensuk':    209,
+  'David Bell':          203,
+  'Jesse Smith':         208,
+  'Khushboo Italiya':    205,
+  'Mignionne Fernandes': 171,
+  'Rhea Kapoor':         202,
+};
+
+// Expected census-drop rate per partner (Commencement → Census) — the Start Number
+// is the minimum enrolments an advisor needs by Commencement so that, after this
+// expected drop, they still land at/above their Incentive Target by Census.
+const DROP_RATES = { ECU: 0.08, VU: 0.08, UC: 0.09 };
+
+const ADVISORS = ADVISORS_RAW.map(a => {
+  const ccc    = a.current / a.pool;
+  const target = INCENTIVE_TARGETS.hasOwnProperty(a.name) ? INCENTIVE_TARGETS[a.name] : null;
+  const pctTarget = target ? a.current / target : null;
+  const dropRate = DROP_RATES[a.partner] || 0;
+  const startNumber = target != null ? Math.ceil(target / (1 - dropRate)) : null;
+  // Gap to Start Number (can be negative if already past it) and the TREP
+  // conversion rate needed among remaining TREP opportunities to close that gap.
+  const startGap = startNumber != null ? startNumber - a.current : null;
+  const requiredToStart = startGap != null ? Math.max(startGap, 0) : null;
+  const trepConvNeeded = startGap == null ? null : (startGap <= 0 ? 0 : (a.trep > 0 ? startGap / a.trep : null));
+  const firstName = a.name.split(' ')[0];
+  return {...a, ccc, target, pctTarget, dropRate, startNumber, startGap, requiredToStart, trepConvNeeded, firstName};
+});
+
+function ragCCC(v)        { return v >= 0.8 ? '#10b981' : v >= 0.65 ? '#f59e0b' : '#f43f5e'; }
+function ragCCCCls(v)     { return v >= 0.8 ? 'good'    : v >= 0.65 ? 'warn'    : 'bad'; }
+function ragOutside(n)    { return n >= 10  ? '#f43f5e' : n >= 4    ? '#f59e0b' : '#10b981'; }
+function ragConvNeeded(v) { if (v == null) return '#475569'; return v <= 0.3 ? '#10b981' : v <= 0.55 ? '#f59e0b' : '#f43f5e'; }
+function fmt1(v)          { return (v * 100).toFixed(1) + '%'; }
+
+let activeFilter = 'ALL';
+let sortCol      = 'ccc';
+let sortDir      = -1;
+let expandedRow  = null;
+let showAll      = false;
+const PAGE_SIZE  = 10;
+
+function renderKPIs() {
+  const all      = ADVISORS;
+  const totCur   = all.reduce((s,a) => s + a.current, 0);
+  const totPool  = all.reduce((s,a) => s + a.pool,    0);
+  const totTrep  = all.reduce((s,a) => s + a.trep,    0);
+  const ccc      = totCur / totPool;
+  const targeted     = all.filter(a => a.target != null);
+  const totTarget    = targeted.reduce((s,a) => s + a.target,  0);
+  const totTargetCur = targeted.reduce((s,a) => s + a.current, 0);
+  const pctIncentive = totTarget ? totTargetCur / totTarget : null;
+  const cards = [
+    { cls:'c-cur', label:'Total Enrolled', value: totCur.toLocaleString(),
+      sub: `across ${all.length} advisors`,
+      barW: Math.min(ccc*100,100), barClr:'#06b6d4' },
+    { cls:'c-ind', label:'Total TREP', value: totTrep.toLocaleString(),
+      sub: `${all.reduce((s,a)=>s+a.rego,0)} rego · ${all.reduce((s,a)=>s+a.reEng,0)} re-eng`,
+      barW: 100, barClr:'#f59e0b' },
+    { cls:'c-ccc', label:'Eligible Pool Conversion', value: fmt1(ccc), valueCls: ragCCCCls(ccc),
+      sub: `${totCur.toLocaleString()} enrolled of ${totPool.toLocaleString()} eligible`,
+      barW: Math.min(ccc*100,100), barClr: ragCCC(ccc) },
+    { cls:'c-tgt', label:'% to Incentive Target', value: pctIncentive != null ? fmt1(pctIncentive) : '—', valueCls: pctIncentive != null ? ragCCCCls(pctIncentive) : '',
+      sub: pctIncentive != null ? `${totTargetCur.toLocaleString()} of ${totTarget.toLocaleString()} incentive target` : `${targeted.length} of ${all.length} advisors have a target set`,
+      barW: pctIncentive != null ? Math.min(pctIncentive*100,100) : 0, barClr: pctIncentive != null ? ragCCC(pctIncentive) : '#475569' },
+  ];
+  document.getElementById('kpi-cards').innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value${c.valueCls?' '+c.valueCls:''}">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${c.barW}%;background:${c.barClr}"></div></div>
+    </div>`).join('');
+}
+
+function renderPartners() {
+  const html = ['ECU','VU','UC'].map(p => {
+    const advs = ADVISORS.filter(a => a.partner === p);
+    const cur  = advs.reduce((s,a) => s + a.current, 0);
+    const pool = advs.reduce((s,a) => s + a.pool, 0);
+    const trep = advs.reduce((s,a) => s + a.trep, 0);
+    const ot   = advs.reduce((s,a) => s + a.outsideTrep, 0);
+    const ccc  = cur / pool;
+    const meta = PARTNER_META[p];
+    const target    = PARTNER_TARGETS[p];
+    const pctTarget = target ? cur / target : 0;
+    const tgtClr    = ragCCC(pctTarget);
+    const needed    = Math.max(target - cur, 0);
+    const row = (label, val, valClr, sub) => `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="font-size:10px;color:#64748b">${label}${sub ? `<span style="color:#475569;font-size:9px;margin-left:4px">${sub}</span>` : ''}</div>
+        <div style="font-size:15px;font-weight:700;color:${valClr}">${val}</div>
+      </div>`;
+    return `
+    <div class="pcard">
+      <div class="pcard-hd">
+        <div class="pcard-name">${meta.label}</div>
+        <span class="pcard-badge ${meta.badgeCls}">${p}</span>
+      </div>
+      ${row('Current Enrolments', cur.toLocaleString(), '#e2e8f0')}
+      ${row('TREP', trep.toLocaleString(), '#f59e0b')}
+      ${row('Pool Conversion', fmt1(ccc), ragCCC(ccc))}
+      <div class="pcard-bar" style="margin-top:10px">
+        <div style="height:3px;border-radius:2px;background:${meta.barClr};width:${Math.min(ccc*100,100)}%"></div>
+      </div>
+      ${row('Partner Target', target.toLocaleString(), '#475569')}
+      ${row('% to Target', fmt1(pctTarget), tgtClr, needed > 0 ? `${needed.toLocaleString()} needed` : 'Target met')}
+      <div class="pcard-bar" style="margin-top:10px">
+        <div style="height:3px;border-radius:2px;background:${tgtClr};width:${Math.min(pctTarget*100,100)}%"></div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:#475569">${advs.length} advisors · Outside TREP no call: <span style="color:${ragOutside(ot)};font-weight:700">${ot}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('partner-cards').innerHTML = html;
+}
+
+function renderFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  ['ALL','ECU','VU','UC'].forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'fbtn' + (activeFilter === p ? ' act' : '');
+    b.textContent = p === 'ALL' ? 'All Partners' : p;
+    b.onclick = () => { activeFilter = p; showAll = false; expandedRow = null; renderFilters(); renderTable(); };
+    el.appendChild(b);
+  });
+}
+
+const COLS = [
+  {key:null,             label:'',                   th:'left',  nosort:true},
+  {key:'name',           label:'Advisor',            th:'left'},
+  {key:'partner',        label:'Partner',            th:'left'},
+  {key:'target',         label:'Incentive Number',   th:'right'},
+  {key:'startNumber',    label:'Start Number',       th:'right'},
+  {key:'current',        label:'Enrolled',           th:'right'},
+  {key:'requiredToStart',label:'Required to Start',  th:'right'},
+  {key:'trep',           label:'TREP',               th:'right'},
+  {key:'pctTarget',      label:'% to Incentive',     th:'right'},
+  {key:'ccc',            label:'EP Conv.',           th:'right'},
+];
+
+function renderTableHead() {
+  document.getElementById('tbl-head').innerHTML = `<tr>${COLS.map(c => {
+    if(c.nosort) return `<th class="${c.th}"></th>`;
+    const sorted = sortCol === c.key;
+    const arrow  = sorted ? (sortDir === -1 ? '▼' : '▲') : '▼';
+    return `<th class="${c.th}${sorted?' sorted':''}" onclick="setSort('${c.key}')">${c.label}<span class="sort-arrow">${arrow}</span></th>`;
+  }).join('')}</tr>`;
+}
+
+function setSort(key) {
+  if(sortCol === key) sortDir *= -1; else { sortCol = key; sortDir = -1; }
+  expandedRow = null; renderTable();
+}
+
+function renderTable() {
+  renderTableHead();
+  const sorted = ADVISORS
+    .filter(a => activeFilter === 'ALL' || a.partner === activeFilter)
+    .sort((a,b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if(av == null && bv == null) return 0;
+      if(av == null) return 1;
+      if(bv == null) return -1;
+      if(typeof av === 'string') return sortDir * av.localeCompare(bv);
+      return sortDir * (av - bv);
+    });
+  const isAll   = activeFilter === 'ALL';
+  const visible = (isAll && !showAll) ? sorted.slice(0, PAGE_SIZE) : sorted;
+  const hidden  = sorted.length - visible.length;
+  let rows = '';
+  visible.forEach((a, i) => {
+    const cccClr  = ragCCC(a.ccc);
+    const meta    = PARTNER_META[a.partner];
+    const isExp   = expandedRow === a.name;
+    const badge   = `<span class="lb-partner ${meta.lbCls}">${a.partner}</span>`;
+    const tgtClr  = a.pctTarget != null ? ragCCC(a.pctTarget) : '#475569';
+    const convClr = ragConvNeeded(a.trepConvNeeded);
+    const convLbl = a.trepConvNeeded == null ? '–' : a.trepConvNeeded <= 0 ? 'Met' : a.trep > 0 ? `${fmt1(a.trepConvNeeded)} needed` : 'No TREP left';
+    rows += `
+    <tr class="adv-row${isExp?' expanded':''}" onclick="toggleRow('${a.name.replace(/'/g,"\\'")}')">
+      <td class="left" style="color:#475569;font-size:11px;width:28px">${i+1}</td>
+      <td class="left">${a.firstName}<span class="chev">▶</span></td>
+      <td class="left">${badge}</td>
+      <td style="color:#94a3b8">${a.target != null ? a.target : '–'}</td>
+      <td style="color:#a78bfa;font-weight:700">${a.startNumber != null ? a.startNumber : '–'}</td>
+      <td style="color:#06b6d4">${a.current}</td>
+      <td style="color:${a.requiredToStart === 0 ? '#10b981' : '#e2e8f0'};font-weight:700">${a.requiredToStart != null ? (a.requiredToStart === 0 ? 'Met' : a.requiredToStart) : '–'}</td>
+      <td>
+        <div style="color:#f59e0b;font-weight:700">${a.trep}</div>
+        <div style="font-size:9px;font-weight:600;color:${convClr};margin-top:2px">${convLbl}</div>
+      </td>
+      <td>
+        ${a.pctTarget != null ? `
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(a.pctTarget*100,100)}%;background:${tgtClr}"></div></div>
+          <span style="color:${tgtClr};min-width:42px;text-align:right">${fmt1(a.pctTarget)}</span>
+        </div>` : `<span style="color:#475569">–</span>`}
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(a.ccc*100,100)}%;background:${cccClr}"></div></div>
+          <span style="color:${cccClr};min-width:42px;text-align:right">${fmt1(a.ccc)}</span>
+        </div>
+      </td>
+    </tr>
+    <tr class="expand-row${isExp?' open':''}">
+      <td colspan="10"><div class="expand-panel">${buildExpandPanel(a)}</div></td>
+    </tr>`;
+  });
+  if(hidden > 0) {
+    rows += `<tr class="show-more-row"><td colspan="10">
+      <button class="show-more-btn" onclick="showAllRows()">▾ Show ${hidden} more advisors</button>
+    </td></tr>`;
+  }
+  if(!sorted.length) rows = `<tr><td colspan="10" class="no-data">No advisors match the selected filter.</td></tr>`;
+  const totPool  = sorted.reduce((s,a) => s + a.pool,    0);
+  const totCur   = sorted.reduce((s,a) => s + a.current, 0);
+  const totTrep  = sorted.reduce((s,a) => s + a.trep,    0);
+  const totRego  = sorted.reduce((s,a) => s + a.rego,    0);
+  const totReEng = sorted.reduce((s,a) => s + a.reEng,   0);
+  const totCCC   = totPool ? totCur / totPool : 0;
+  const cccClr   = ragCCC(totCCC);
+  const regoPct  = totTrep ? Math.round(totRego / totTrep * 100) : 0;
+  const reEngPct = totTrep ? 100 - regoPct : 0;
+  const targetRows    = sorted.filter(a => a.target != null);
+  const totTarget      = targetRows.reduce((s,a) => s + a.target,  0);
+  const totTargetCur   = targetRows.reduce((s,a) => s + a.current, 0);
+  const totStart        = targetRows.reduce((s,a) => s + a.startNumber, 0);
+  const totRequired     = targetRows.reduce((s,a) => s + a.requiredToStart, 0);
+  const totPctTarget   = totTarget ? totTargetCur / totTarget : null;
+  const totTgtClr      = totPctTarget != null ? ragCCC(totPctTarget) : '#475569';
+  const totConvNeeded   = totTrep ? totRequired / totTrep : null;
+  const totConvClr      = ragConvNeeded(totConvNeeded);
+  const totConvLbl      = totRequired === 0 ? 'Met' : totTrep ? `${fmt1(totConvNeeded)} needed` : '–';
+  document.getElementById('tbl-body').innerHTML = rows;
+  document.getElementById('tbl-foot').innerHTML = `
+    <tr>
+      <td class="left" colspan="3">Total / ${sorted.length} advisors</td>
+      <td style="color:#94a3b8">${totTarget ? totTarget.toLocaleString() : '–'}</td>
+      <td style="color:#a78bfa">${totStart ? totStart.toLocaleString() : '–'}</td>
+      <td style="color:#06b6d4">${totCur.toLocaleString()}</td>
+      <td style="color:${totRequired === 0 ? '#10b981' : '#e2e8f0'}">${totRequired === 0 ? 'Met' : totRequired.toLocaleString()}</td>
+      <td>
+        <div style="color:#f59e0b">${totTrep}
+          <div class="tf-trep-split">
+            <span style="color:#6366f1">${totRego} rego (${regoPct}%)</span> · <span style="color:#06b6d4">${totReEng} re-eng (${reEngPct}%)</span>
+          </div>
+        </div>
+        <div style="font-size:9px;font-weight:600;color:${totConvClr};margin-top:3px;text-align:right">${totConvLbl}</div>
+      </td>
+      <td style="text-align:right;color:${totTgtClr}">${totPctTarget != null ? fmt1(totPctTarget) : '–'}</td>
+      <td style="text-align:right;color:${cccClr}">${fmt1(totCCC)}</td>
+    </tr>`;
+}
+
+function showAllRows() { showAll = true; renderTable(); }
+
+function buildExpandPanel(a) {
+  const otClr = ragOutside(a.outsideTrep);
+  const row = (label, val, valClr, sub) => `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+      <div style="font-size:10px;color:#64748b">${label}${sub ? `<span style="color:#475569;font-size:9px;margin-left:4px">${sub}</span>` : ''}</div>
+      <div style="font-size:15px;font-weight:700;color:${valClr}">${val}</div>
+    </div>`;
+  const regoBarW = a.trep ? Math.round(a.rego / a.trep * 100) : 0;
+  return `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:4px 0">
+      <div style="flex:1;min-width:220px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">ENROLMENT SUMMARY</div>
+        ${row('Current Enrolments', a.current.toLocaleString(), '#e2e8f0')}
+        ${row('Pool Conversion', fmt1(a.ccc), ragCCC(a.ccc))}
+        ${row('TREP', a.trep.toLocaleString(), '#f59e0b', 'Opportunity Remaining')}
+        ${row('TREP Conversion Required', a.trepConvNeeded == null ? '–' : (a.trepConvNeeded <= 0 ? 'Met' : fmt1(a.trepConvNeeded)), ragConvNeeded(a.trepConvNeeded), 'to hit Start Number')}
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">INCENTIVE TARGET</div>
+        ${a.target != null ? `
+        ${row('Start Number', a.startNumber.toLocaleString(), '#a78bfa', `${Math.round(a.dropRate*100)}% drop buffer`)}
+        ${row('Incentive Number', a.target.toLocaleString(), '#e2e8f0')}
+        ${row('% to Incentive', fmt1(a.pctTarget), ragCCC(a.pctTarget), a.current < a.target ? `${(a.target - a.current).toLocaleString()} needed` : 'Target met')}
+        ${row('Enrolled vs. Start Number', a.current.toLocaleString(), a.current >= a.startNumber ? '#10b981' : '#f43f5e', a.current >= a.startNumber ? 'On track for buffer' : `${(a.startNumber - a.current).toLocaleString()} short of Start Number`)}
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <div style="flex:1;height:4px;background:#1e2d45;border-radius:2px;overflow:hidden">
+            <div style="height:4px;width:${Math.min(a.pctTarget*100,100)}%;background:${ragCCC(a.pctTarget)};border-radius:2px"></div>
+          </div>
+        </div>` : `<div style="font-size:11px;color:#475569;padding:8px 0">No incentive target set</div>`}
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">TREP BREAKDOWN</div>
+        <div style="padding:8px 0">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Rego <span style="color:#475569;font-size:9px">Enrolled · not yet in T4</span></div>
+            <div style="font-size:15px;font-weight:700;color:#6366f1">${a.rego}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Re-Eng <span style="color:#475569;font-size:9px">Not active · re-engage</span></div>
+            <div style="font-size:15px;font-weight:700;color:#06b6d4">${a.reEng}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Total TREP</div>
+            <div style="font-size:15px;font-weight:700;color:#f59e0b">${a.trep}</div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <div style="flex:1;height:4px;background:#1e2d45;border-radius:2px;overflow:hidden">
+              <div style="height:4px;width:${regoBarW}%;background:#6366f1;border-radius:2px"></div>
+            </div>
+          </div>
+          <div style="margin-top:4px;display:flex;gap:12px">
+            <span style="font-size:10px;color:#6366f1">${regoBarW}% rego</span>
+            <span style="font-size:10px;color:#06b6d4">${100-regoBarW}% re-eng</span>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:.08em;margin-bottom:6px">OUTSIDE TREP — NO CALL</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">Students</div>
+            <div style="font-size:15px;font-weight:700;color:${otClr}">${a.outsideTrep}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+            <div style="font-size:10px;color:#64748b">% of Pool</div>
+            <div style="font-size:15px;font-weight:700;color:${otClr}">${a.pool ? (a.outsideTrep/a.pool*100).toFixed(1) : 0}%</div>
+          </div>
+          <div style="font-size:9px;color:#475569;margin-top:6px">Not enrolled · known reason · last attempt before 22 May 2026</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleRow(name) {
+  expandedRow = expandedRow === name ? null : name;
+  renderTable();
+}
+
+renderKPIs();
+renderPartners();
+renderFilters();
+renderTable();
+</script>
+</body>
+</html>
