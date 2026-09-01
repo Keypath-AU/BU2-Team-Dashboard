@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Enhancement Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: white;
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  }
+
+  header h1 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  header p {
+    font-size: 0.85rem;
+    opacity: 0.65;
+    margin-top: 4px;
+  }
+
+  .updated-badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 0.78rem;
+    opacity: 0.85;
+  }
+
+  .summary-bar {
+    display: flex;
+    gap: 16px;
+    padding: 18px 40px;
+    background: white;
+    border-bottom: 1px solid #e2e5ea;
+    flex-wrap: wrap;
+  }
+
+  .summary-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .summary-pill .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+  }
+
+  .pill-sprint   { background: #e8f4fd; color: #1565c0; }
+  .pill-sprint .dot { background: #1976d2; }
+  .pill-review   { background: #fff8e1; color: #f57f17; }
+  .pill-review .dot { background: #f9a825; }
+  .pill-done     { background: #e8f5e9; color: #2e7d32; }
+  .pill-done .dot { background: #43a047; }
+  .pill-consider { background: #f3e5f5; color: #6a1b9a; }
+  .pill-consider .dot { background: #8e24aa; }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    padding: 32px 40px;
+    align-items: start;
+    overflow-x: auto;
+  }
+
+  .column-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid currentColor;
+  }
+
+  .column-header h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .column-header .count {
+    background: currentColor;
+    color: white;
+    border-radius: 12px;
+    padding: 1px 9px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    opacity: 0.85;
+  }
+
+  .col-sprint   { color: #1976d2; }
+  .col-review   { color: #f9a825; }
+  .col-done     { color: #43a047; }
+  .col-consider { color: #8e24aa; }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.15s;
+    position: relative;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+  }
+
+  .card.sprint   { border-left-color: #1976d2; }
+  .card.review   { border-left-color: #f9a825; }
+  .card.done     { border-left-color: #43a047; }
+  .card.consider { border-left-color: #8e24aa; }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    color: #1a1a2e;
+  }
+
+  .card-summary {
+    font-size: 0.82rem;
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .badge-label {
+    opacity: 0.65;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .impact-high   { background: #fdecea; color: #c62828; }
+  .impact-medium { background: #fff3e0; color: #e65100; }
+  .impact-low    { background: #e8f5e9; color: #2e7d32; }
+
+  .effort-high   { background: #fce4ec; color: #880e4f; }
+  .effort-medium { background: #ede7f6; color: #4527a0; }
+  .effort-low    { background: #e0f7fa; color: #006064; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal {
+    background: white;
+    border-radius: 14px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    background: white;
+    border-radius: 14px 14px 0 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1a1a2e;
+  }
+
+  .modal-close {
+    background: #f0f2f5;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #555;
+    transition: background 0.15s;
+  }
+
+  .modal-close:hover { background: #e0e3e8; }
+
+  .modal-body {
+    padding: 20px 24px 24px;
+  }
+
+  .modal-status-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .status-chip {
+    padding: 4px 14px;
+    border-radius: 16px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chip-sprint   { background: #e3f2fd; color: #1565c0; }
+  .chip-review   { background: #fff8e1; color: #f57f17; }
+  .chip-done     { background: #e8f5e9; color: #2e7d32; }
+  .chip-consider { background: #f3e5f5; color: #6a1b9a; }
+
+  .modal-details {
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #333;
+    white-space: pre-line;
+  }
+
+  .modal-details p { margin-bottom: 8px; }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+
+  .divider {
+    height: 1px;
+    background: #f0f2f5;
+    margin: 16px 0;
+  }
+
+  @media (max-width: 900px) {
+    .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 700px) {
+    header { padding: 18px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .board { padding: 20px; gap: 20px; grid-template-columns: 1fr; }
+    .summary-bar { padding: 12px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>CRM Enhancement Dashboard</h1>
+    <p>Student Success — System Improvements Tracker</p>
+  </div>
+  <div class="updated-badge">Updated: 01 Sep 2026</div>
+</header>
+
+<div class="summary-bar">
+  <div class="summary-pill pill-sprint"><span class="dot"></span> Current Sprint: 1</div>
+  <div class="summary-pill pill-review"><span class="dot"></span> In Review: 3</div>
+  <div class="summary-pill pill-done"><span class="dot"></span> Completed: 7</div>
+  <div class="summary-pill pill-consider"><span class="dot"></span> Under Consideration: 2</div>
+</div>
+
+<div class="board">
+
+  <!-- UNDER CONSIDERATION -->
+  <div>
+    <div class="column-header col-consider">
+      <h2>Under Consideration</h2>
+      <span class="count">2</span>
+    </div>
+
+    <div class="card consider" onclick="openModal('m8')">
+      <div class="card-title">Compliance Reminder</div>
+      <div class="card-summary">Inclusion of a Compliance Reminder on the new call page ahead of the PureCloud upgrade.</div>
+      <div class="card-meta">
+        <span class="badge impact-medium"><span class="badge-label">Impact</span> Medium</span>
+        <span class="badge effort-low"><span class="badge-label">Effort</span> Low</span>
+      </div>
+    </div>
+
+    <div class="card consider" onclick="openModal('m9')">
+      <div class="card-title">Manually Updateable Next Call Booking Field</div>
+      <div class="card-summary">Improving advisor visibility of upcoming booked calls directly within the CRM.</div>
+      <div class="card-meta">
+        <span class="badge impact-medium"><span class="badge-label">Impact</span> Medium</span>
+        <span class="badge effort-medium"><span class="badge-label">Effort</span> Medium</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN REVIEW -->
+  <div>
+    <div class="column-header col-review">
+      <h2>In Review</h2>
+      <span class="count">3</span>
+    </div>
+
+    <div class="card review" onclick="openModal('m11')">
+      <div class="card-title">Risk Identification Overhaul</div>
+      <div class="card-summary">A data-led overhaul to better identify both a student's enrollment risk and their risk of dropping out.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-high"><span class="badge-label">Effort</span> High</span>
+      </div>
+    </div>
+
+    <div class="card review" onclick="openModal('m13')">
+      <div class="card-title">Encumbrance Visibility</div>
+      <div class="card-summary">Better visibility of encumbrances that can stop a student enrolling or block our visibility into their grades/progression.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-high"><span class="badge-label">Effort</span> High</span>
+      </div>
+    </div>
+
+    <div class="card review" onclick="openModal('m10')">
+      <div class="card-title">Winback Sub-Status Classification</div>
+      <div class="card-summary">Two new statuses to clearly identify why a student is returning to their program.</div>
+      <div class="card-meta">
+        <span class="badge impact-medium"><span class="badge-label">Impact</span> Medium</span>
+        <span class="badge effort-low"><span class="badge-label">Effort</span> Low</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CURRENT SPRINT -->
+  <div>
+    <div class="column-header col-sprint">
+      <h2>Current Sprint</h2>
+      <span class="count">1</span>
+    </div>
+
+    <div class="card sprint" onclick="openModal('m12')">
+      <div class="card-title">Intent to Pay Status</div>
+      <div class="card-summary">A new dropdown to give consistent, forecastable visibility into a student's likelihood of passing census.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-medium"><span class="badge-label">Effort</span> Medium</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETED -->
+  <div>
+    <div class="column-header col-done">
+      <h2>Completed</h2>
+      <span class="count">7</span>
+    </div>
+
+    <div class="card done" onclick="openModal('m6')">
+      <div class="card-title">Next Call Scheduled</div>
+      <div class="card-summary">Introduces a Next Call Scheduled field within call wrap-up to improve tracking and reporting.</div>
+      <div class="card-meta">
+        <span class="badge impact-medium"><span class="badge-label">Impact</span> Medium</span>
+        <span class="badge effort-medium"><span class="badge-label">Effort</span> Medium</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m7')">
+      <div class="card-title">SA Fee Help and SA Fee Payment Status</div>
+      <div class="card-summary">Fees data to be included in the Enrolment page for easier tracking and workflow.</div>
+      <div class="card-meta">
+        <span class="badge impact-medium"><span class="badge-label">Impact</span> Medium</span>
+        <span class="badge effort-medium"><span class="badge-label">Effort</span> Medium</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m1')">
+      <div class="card-title">Visibility of Compliance Status for Placement in CRM</div>
+      <div class="card-summary">Mapping existing compliance data from the InPlace system to the CRM.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-high"><span class="badge-label">Effort</span> High</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m2')">
+      <div class="card-title">Visibility of Placement Status in CRM</div>
+      <div class="card-summary">Mapping existing placement status data from the InPlace system to the CRM.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-high"><span class="badge-label">Effort</span> High</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m3')">
+      <div class="card-title">Visibility of Degree Path Fields in CRM</div>
+      <div class="card-summary">Improve visibility and usability of vital Degree Path Data in the CRM.</div>
+      <div class="card-meta">
+        <span class="badge" style="background:#f0f2f5;color:#888;"><span class="badge-label">Impact</span> TBC</span>
+        <span class="badge" style="background:#f0f2f5;color:#888;"><span class="badge-label">Effort</span> TBC</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m5')">
+      <div class="card-title">Call Type Refinement</div>
+      <div class="card-summary">A small number of refinements to simplify and improve consistency across call logging.</div>
+      <div class="card-meta">
+        <span class="badge impact-low"><span class="badge-label">Impact</span> Low</span>
+        <span class="badge effort-low"><span class="badge-label">Effort</span> Low</span>
+      </div>
+    </div>
+
+    <div class="card done" onclick="openModal('m14')">
+      <div class="card-title">Automatic Call Type Classification</div>
+      <div class="card-summary">The CRM now automatically assigns call type based on enrollment and next term status, removing manual selection.</div>
+      <div class="card-meta">
+        <span class="badge impact-high"><span class="badge-label">Impact</span> High</span>
+        <span class="badge effort-high"><span class="badge-label">Effort</span> High</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="forceClose()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-status-row" id="modal-badges"></div>
+      <div class="section-label">Details</div>
+      <div class="modal-details" id="modal-details"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const items = {
+  m1: {
+    title: "Visibility of Compliance Status for Placement in CRM",
+    status: "Completed", statusClass: "chip-done",
+    impact: "High", impactClass: "impact-high",
+    effort: "High", effortClass: "effort-high",
+    details: "This data will surface on the Enrolment page alongside other call activity, enabling improved tracking and reporting.\n\nData is mapped directly from the InPlace system into the CRM student record, giving advisors real-time visibility into compliance status without switching between systems."
+  },
+  m2: {
+    title: "Visibility of Placement Status in CRM",
+    status: "Completed", statusClass: "chip-done",
+    impact: "High", impactClass: "impact-high",
+    effort: "High", effortClass: "effort-high",
+    details: "Advisors currently need to leave the CRM and refer to EPIC and/or InPlace to check student placement status (Looking, Potential, Interviewing and/or Locked In).\n\nThis enhancement will surface that data directly within the student record, improving efficiency and enabling clearer visibility both at an individual and cohort level."
+  },
+  m3: {
+    title: "Visibility of Degree Path Fields in CRM",
+    status: "Completed", statusClass: "chip-done",
+    impact: "TBC", impactClass: "",
+    effort: "TBC", effortClass: "",
+    details: "Degree Paths currently have no filtering or dashboard capability. Adding these 5 CRM fields fixes that:\n\n• Credits Completed\n• Credits Remaining\n• Expected Completion Date\n• Next Placement Date\n• Reviewed Date"
+  },
+  m5: {
+    title: "Call Type Refinement",
+    status: "Completed", statusClass: "chip-done",
+    impact: "Low", impactClass: "impact-low",
+    effort: "Low", effortClass: "effort-low",
+    details: "All new student related calls will be consolidated under a single Welcome Call category.\n\nCreation of a new T1 Call — At-Risk / Retention will be renamed to At-Risk Call.\n\nA number of unused call types will be removed.\n\nThese changes are aimed at reducing complexity, improving data quality, and making it easier to select the right call type."
+  },
+  m12: {
+    title: "Intent to Pay Status",
+    status: "Current Sprint", statusClass: "chip-sprint",
+    impact: "High", impactClass: "impact-high",
+    effort: "Medium", effortClass: "effort-medium",
+    details: "Teams currently track student fee payment status in a variety of inconsistent ways, particularly as students approach census — making it hard to get reliable insight for forecasting.\n\nThe proposal is to introduce a new Intent to Pay dropdown, with statuses agreed as a team, to standardise this tracking in the CRM.\n\nThis will give clearer, consistent visibility into how likely a student is to pass census successfully, supporting more accurate forecasting."
+  },
+  m11: {
+    title: "Risk Identification Overhaul",
+    status: "In Review", statusClass: "chip-review",
+    impact: "High", impactClass: "impact-high",
+    effort: "High", effortClass: "effort-high",
+    details: "A considerable overhaul of how we identify risk, moving away from assumption-based indicators toward models backed by data.\n\nTwo types of risk are in scope: the risk a student presents to their own enrollment, and the risk a student presents to us of dropping their enrollment.\n\nWhere possible, we'll use data already available in our systems. For some partners, this may mean requesting additional data directly from them."
+  },
+  m13: {
+    title: "Encumbrance Visibility",
+    status: "In Review", statusClass: "chip-review",
+    impact: "High", impactClass: "impact-high",
+    effort: "High", effortClass: "effort-high",
+    details: "A variety of data points across different teams can currently encumber a student's ability to progress in their course — whether that's preventing them from enrolling, or blocking our visibility into their grades so we can't advise them on their progression.\n\nWe're reviewing all of the different encumbrance data types, how we receive them, and where they get sent through to, so we can better utilise this information.\n\nThe outcome is to be more proactive with our outreach to affected students, ensuring as little impact as possible on their future progression and enrolments."
+  },
+  m10: {
+    title: "Winback Sub-Status Classification",
+    status: "In Review", statusClass: "chip-review",
+    impact: "Medium", impactClass: "impact-medium",
+    effort: "Low", effortClass: "effort-low",
+    details: "Currently, returning students are identified using repurposed statuses — Account Balance or Tuition Reimbursement — neither of which actually reflects why the student is coming back.\n\nThere are two distinct scenarios: a Grad Cert to Master's Winback, where a graduated student returns to continue into a further program, and a Winback, where a student who withdrew or left mid-program decides to return.\n\nThe proposal is to add two purpose-built statuses — Grad Cert to Master's Winback and Winback — replacing the current repurposed statuses so advisors can identify a returning student's situation at a glance, rather than relying on unrelated statuses."
+  },
+  m14: {
+    title: "Automatic Call Type Classification",
+    status: "Completed", statusClass: "chip-done",
+    impact: "High", impactClass: "impact-high",
+    effort: "High", effortClass: "effort-high",
+    details: "Advisers previously had to manually select whether a call was a CS Engagement, Registration, Reengagement or other call type. The CRM now automatically assigns this field based on the student's enrollment situation.\n\nPre-census calls are marked as Welcome Call. T1 calls are marked accordingly based on the student's actual start term. All other call types — Reengagement, Registration, CS Engagement and the like — are automatically assigned based on the student's enrollment status and next term status.\n\nAdvisers retain an optional secondary dropdown they can use if they wish — for example, tagging a Registration call as being purely about placement.\n\nThe goal is to remove admin burden on advisers, while ensuring 100% accuracy in call type marking — laying the foundation as we move towards listening to a greater number of calls in QA."
+  },
+  m6: {
+    title: "Next Call Scheduled",
+    status: "Completed", statusClass: "chip-done",
+    impact: "Medium", impactClass: "impact-medium",
+    effort: "Medium", effortClass: "effort-medium",
+    details: "When wrapping up a call, advisors are now required to complete the Next Call Scheduled field (Yes, No, or N/A).\n\nIf Yes is selected, a date field appears and must be completed.\n\nThis data surfaces on the Enrolment page alongside other call activity, enabling improved tracking and reporting."
+  },
+  m7: {
+    title: "SA Fee Help and SA Fee Payment Status",
+    status: "Completed", statusClass: "chip-done",
+    impact: "Medium", impactClass: "impact-medium",
+    effort: "Medium", effortClass: "effort-medium",
+    details: "Various schools have to follow up with students for SA fee payments. If fees are unpaid, a student may not be able to enrol.\n\nNew fields have been added to the Enrolment page to easily track this information and improve advisor workflow."
+  },
+  m8: {
+    title: "Compliance Reminder",
+    status: "Under Consideration", statusClass: "chip-consider",
+    impact: "Medium", impactClass: "impact-medium",
+    effort: "Low", effortClass: "effort-low",
+    details: "Improving visibility of a student's compliance status to give SSAs clearer insight ahead of the PureCloud upgrade.\n\nThis would include inclusion of a Compliance Reminder on the new call page — a lightweight prompt to advisors at the point of call wrap-up."
+  },
+  m9: {
+    title: "Manually Updateable Next Call Booking Field",
+    status: "Under Consideration", statusClass: "chip-consider",
+    impact: "Medium", impactClass: "impact-medium",
+    effort: "Medium", effortClass: "effort-medium",
+    details: "Improving advisor visibility of upcoming booked calls directly within the CRM.\n\nThe proposal is to make the Next Call Scheduled field on the enrolment instance manually updateable, giving advisors a reliable way to reflect bookings — including those rescheduled or made outside of a call — without adding manual admin overhead."
+  }
+};
+
+function openModal(id) {
+  const item = items[id];
+  document.getElementById('modal-title').textContent = item.title;
+  document.getElementById('modal-details').textContent = item.details;
+
+  const badges = document.getElementById('modal-badges');
+  let badgeHtml = `<span class="status-chip ${item.statusClass}">${item.status}</span>`;
+  if (item.impact !== 'TBC') {
+    badgeHtml += `<span class="badge ${item.impactClass}"><span class="badge-label">Impact</span> ${item.impact}</span>`;
+    badgeHtml += `<span class="badge ${item.effortClass}"><span class="badge-label">Effort</span> ${item.effort}</span>`;
+  }
+  badges.innerHTML = badgeHtml;
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('open');
+  }
+}
+
+function forceClose() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') forceClose();
+});
+</script>
+</body>
+</html>
