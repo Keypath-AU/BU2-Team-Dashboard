@@ -1,0 +1,2690 @@
+<!--
+  Data-maintenance note for future updates:
+  This dashboard is meant to be rebuilt as more QA call evaluation docx exports
+  arrive, using exactly the same export format (SSA FY27 QA Evaluation).
+  All data lives in the script#qa-data JSON block below as
+  { questions, sections, calls, meta }. To add a new batch:
+    1. Parse each new docx export into a call object with the same shape as the
+       existing entries in `calls` (dedupe by interactionId -- some exports are
+       re-sent unchanged).
+    2. Tag new call objects with the next batch number/date and add an entry to
+       meta.batches describing that upload.
+    3. Append the new call objects to the `calls` array. Every chart, table and
+       KPI on this page recomputes client-side from that array -- nothing else
+       needs to change.
+    4. Republish this artifact to the same URL to update it in place.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adviser QA Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  color-scheme: light;
+  --page:        #f9f9f7;
+  --surface:     #fcfcfb;
+  --surface-2:   #f3f2ee;
+  --ink:         #0b0b0b;
+  --ink-2:       #52514e;
+  --ink-muted:   #898781;
+  --grid:        #e1e0d9;
+  --baseline:    #c3c2b7;
+  --border:      rgba(11,11,11,0.10);
+  --accent:      #2a78d6;
+  --accent-ink:  #ffffff;
+  --good:        #0ca30c;
+  --good-bg:     rgba(12,163,12,0.10);
+  --critical:    #d03b3b;
+  --critical-bg: rgba(208,59,59,0.10);
+  --sec-connect: #2a78d6;
+  --sec-explore: #eb6834;
+  --sec-qoa:     #1baf7a;
+  --sec-resolve: #eda100;
+  --adv-1:       #2a78d6;
+  --adv-2:       #eb6834;
+  --adv-3:       #1baf7a;
+  --adv-4:       #eda100;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+  --shadow-card: 0 1px 2px rgba(11,11,11,0.04), 0 1px 1px rgba(11,11,11,0.03);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --surface-2:   #232322;
+    --ink:         #ffffff;
+    --ink-2:       #c3c2b7;
+    --ink-muted:   #898781;
+    --grid:        #2c2c2a;
+    --baseline:    #383835;
+    --border:      rgba(255,255,255,0.10);
+    --accent:      #3987e5;
+    --accent-ink:  #ffffff;
+    --good:        #0ca30c;
+    --good-bg:     rgba(12,163,12,0.16);
+    --critical:    #e66767;
+    --critical-bg: rgba(230,103,103,0.16);
+    --sec-connect: #3987e5;
+    --sec-explore: #d95926;
+    --sec-qoa:     #199e70;
+    --sec-resolve: #c98500;
+    --adv-1:       #3987e5;
+    --adv-2:       #d95926;
+    --adv-3:       #199e70;
+    --adv-4:       #c98500;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:        #0d0d0d;
+  --surface:     #1a1a19;
+  --surface-2:   #232322;
+  --ink:         #ffffff;
+  --ink-2:       #c3c2b7;
+  --ink-muted:   #898781;
+  --grid:        #2c2c2a;
+  --baseline:    #383835;
+  --border:      rgba(255,255,255,0.10);
+  --accent:      #3987e5;
+  --accent-ink:  #ffffff;
+  --good:        #0ca30c;
+  --good-bg:     rgba(12,163,12,0.16);
+  --critical:    #e66767;
+  --critical-bg: rgba(230,103,103,0.16);
+  --sec-connect: #3987e5;
+  --sec-explore: #d95926;
+  --sec-qoa:     #199e70;
+  --sec-resolve: #c98500;
+  --adv-1:       #3987e5;
+  --adv-2:       #d95926;
+  --adv-3:       #199e70;
+  --adv-4:       #c98500;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+a { color: var(--accent); }
+
+/* ---------- header ---------- */
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.hero .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 6px;
+}
+.hero h1 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.hero p.sub {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  max-width: 60ch;
+}
+.hero-meta {
+  text-align: right;
+  color: var(--ink-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.hero-meta strong { color: var(--ink-2); font-weight: 600; }
+
+.note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-s);
+  padding: 12px 14px;
+  margin-bottom: 22px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.note b { color: var(--ink); }
+
+/* ---------- filter bar ---------- */
+.filterbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--page);
+  padding: 10px 0 16px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--grid);
+}
+.filterbar .fgroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 6px 10px;
+}
+.filterbar label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.filterbar select {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+.filterbar select:focus-visible { outline: 2px solid var(--accent); border-radius: 3px; }
+#resetBtn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-family: inherit;
+  padding: 7px 12px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+#resetBtn:hover { color: var(--ink); border-color: var(--accent); }
+#resetBtn:focus-visible { outline: 2px solid var(--accent); }
+.filter-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* ---------- sections ---------- */
+section.block { margin: 30px 0; }
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.block-head h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+.block-head .desc {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+/* ---------- kpi tiles ---------- */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.kpi.warn { border-color: rgba(208,59,59,0.35); }
+.kpi.warn .value { color: var(--critical); }
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+.kpi .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.kpi .value {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi .value.small { font-size: 24px; }
+.kpi .sub { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+/* ---------- card ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  padding: 18px 20px;
+}
+
+/* ---------- advisor table ---------- */
+.table-scroll { overflow-x: auto; }
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 720px;
+}
+table.data th, table.data td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+table.data th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+table.data th:hover { color: var(--ink); }
+table.data th.sorted::after {
+  content: attr(data-arrow);
+  margin-left: 4px;
+  color: var(--accent);
+}
+table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.data tbody tr { cursor: pointer; }
+table.data tbody tr:hover { background: var(--surface-2); }
+table.data tbody tr.selected { background: var(--surface-2); }
+.name-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.dot {
+  width: 9px; height: 9px; border-radius: 50%; flex: none;
+}
+.bar-cell { display: flex; align-items: center; gap: 8px; }
+.bar-track {
+  position: relative;
+  width: 84px; height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+  flex: none;
+}
+.bar-fill { position: absolute; inset: 0; border-radius: 3px; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.pill.pass { color: var(--good); background: var(--good-bg); }
+.pill.fail { color: var(--critical); background: var(--critical-bg); }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.muted { color: var(--ink-muted); }
+
+/* ---------- section small-multiples ---------- */
+.legend-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.legend-row .item { display: flex; align-items: center; gap: 6px; }
+.legend-row .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+.multiples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.mchart {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 14px 16px 12px;
+  box-shadow: var(--shadow-card);
+}
+.mchart .mhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.mchart .mhead .adv { font-weight: 700; font-size: 13px; }
+.mchart .mhead .n { font-size: 11.5px; color: var(--ink-muted); }
+.mbar-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.mbar-label { width: 92px; flex: none; font-size: 11.5px; color: var(--ink-2); }
+.mbar-track { flex: 1; height: 10px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.mbar-fill { display: block; height: 100%; border-radius: 3px; }
+.mbar-val { width: 34px; text-align: right; flex: none; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+
+/* ---------- adviser detail panel ---------- */
+.adviser-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--grid);
+}
+.adviser-head h3 { margin: 0 0 4px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.adviser-head .meta { font-size: 12.5px; color: var(--ink-muted); }
+.adviser-head .stats { display: flex; gap: 18px; text-align: right; flex-wrap: wrap; }
+.adviser-head .stat .big { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.adviser-head .stat .lab { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); font-weight: 600; }
+.adviser-subhead { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); font-weight: 600; margin: 0 0 10px; }
+.metric-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.metric-tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-family: inherit;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.metric-tab:hover { border-color: var(--accent); color: var(--ink); }
+.metric-tab.active { color: var(--accent-ink); border-color: transparent; }
+
+/* ---------- coaching focus chart ---------- */
+.hbar-row { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
+.hbar-label { width: 200px; flex: none; font-size: 12.5px; color: var(--ink); }
+.hbar-track { flex: 1; height: 14px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.hbar-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.hbar-val { width: 70px; flex: none; text-align: right; font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- trend chart ---------- */
+.trend-wrap { position: relative; }
+.trend-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 10px;
+}
+svg.chart text { font-family: inherit; fill: var(--ink-muted); }
+svg.chart .gridline { stroke: var(--grid); stroke-width: 1; }
+svg.chart .baseline { stroke: var(--baseline); stroke-width: 1; }
+svg.chart .axis-label { font-size: 10.5px; }
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--page);
+  font-size: 11.5px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.08s ease;
+  max-width: 240px;
+  line-height: 1.4;
+}
+.tooltip.show { opacity: 1; }
+.tooltip b { font-weight: 700; }
+
+/* ---------- calls list + detail ---------- */
+.calls-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.detail {
+  display: none;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
+  margin-top: 14px;
+}
+.detail.open { display: block; }
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--grid);
+}
+.detail-head h3 { margin: 0 0 4px; font-size: 17px; }
+.detail-head .meta { font-size: 12.5px; color: var(--ink-muted); }
+.detail-head .meta code {
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.detail-score { text-align: right; }
+.detail-score .big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.detail-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.close-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+}
+.close-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.detail-sec {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  border-top: 3px solid var(--c);
+}
+.detail-sec .lab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); font-weight: 600; }
+.detail-sec .pct { font-size: 19px; font-weight: 700; margin: 3px 0; }
+.detail-sec .w { font-size: 11px; color: var(--ink-muted); }
+
+.qa-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.qa-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 10px 14px;
+}
+.qa-item .qhead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.qa-item .qtext { font-weight: 600; font-size: 13px; }
+.qa-item .qrationale { font-size: 12.5px; color: var(--ink-2); }
+.rating-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex: none;
+  white-space: nowrap;
+}
+.rating-Exceeds { color: var(--good); background: var(--good-bg); }
+.rating-Meets { color: var(--accent); background: rgba(42,120,214,0.10); }
+.rating-DoesNotMeet, .rating-Does { color: var(--critical); background: var(--critical-bg); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.detail h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  margin: 0 0 8px;
+}
+.detail ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2); }
+.detail ul li { margin-bottom: 4px; }
+blockquote {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.autofail-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--critical-bg);
+  border: 1px solid rgba(208,59,59,0.35);
+  border-radius: var(--radius-m);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.autofail-banner b { color: var(--critical); }
+.prior-eval {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.prior-eval b { color: var(--ink); }
+.compliance-list { display: flex; flex-direction: column; gap: 8px; }
+.compliance-item { display: flex; gap: 8px; font-size: 12.5px; }
+.compliance-item .req { font-weight: 600; width: 140px; flex: none; }
+.compliance-item .ev { color: var(--ink-2); }
+
+footer.foot {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid var(--grid);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .detail-grid { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .kpis { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-meta { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Student Success &middot; QA Programme</p>
+      <h1>Call Quality Evaluation Dashboard</h1>
+      <p class="sub">Cumulative adviser performance across the Connect &middot; Explore &middot; Quality of Advice &middot; Resolve rubric, built from uploaded call evaluation reports.</p>
+    </div>
+    <div class="hero-meta">
+      Last updated <strong id="lastUpdated">&mdash;</strong><br>
+      <span id="callSummary">&mdash;</span>
+    </div>
+  </div>
+
+  <div class="filterbar">
+    <div class="fgroup">
+      <label for="fAdvisor">Adviser</label>
+      <select id="fAdvisor"><option value="">All</option></select>
+    </div>
+    <div class="fgroup">
+      <label for="fCallType">Call type</label>
+      <select id="fCallType"><option value="">All</option></select>
+    </div>
+    <div class="fgroup">
+      <label for="fResult">Result</label>
+      <select id="fResult"><option value="">All</option></select>
+    </div>
+    <div class="fgroup">
+      <label for="fFocus">Coaching focus</label>
+      <select id="fFocus"><option value="">All</option></select>
+    </div>
+    <button id="resetBtn" type="button">Reset filters</button>
+    <span class="filter-count" id="filterCount"></span>
+  </div>
+
+  <section class="block">
+    <div class="kpis" id="kpiRow"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Adviser performance</h2>
+      <span class="desc">Cumulative average across every evaluated call &middot; click a row to see their breakdown and trend</span>
+    </div>
+    <div class="card table-scroll">
+      <table class="data" id="advisorTable">
+        <thead>
+          <tr>
+            <th data-key="advisor">Adviser</th>
+            <th data-key="calls" class="num">Calls</th>
+            <th data-key="overall" class="num">Avg overall</th>
+            <th data-key="connect" class="num">Connect</th>
+            <th data-key="explore" class="num">Explore</th>
+            <th data-key="qualityOfAdvice" class="num">Quality of advice</th>
+            <th data-key="resolve" class="num">Resolve</th>
+            <th data-key="compliance" class="num">Compliance</th>
+            <th data-key="focus">Top coaching focus</th>
+          </tr>
+        </thead>
+        <tbody id="advisorTbody"></tbody>
+      </table>
+    </div>
+    <div class="detail" id="adviserDetailPanel"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Individual calls</h2>
+      <span class="desc">Every evaluated call &middot; click a row to open the full Q1&ndash;Q8 breakdown</span>
+    </div>
+    <div class="card table-scroll">
+      <table class="data" id="callsTable">
+        <thead>
+          <tr>
+            <th data-key="advisor">Adviser</th>
+            <th data-key="interactionId">Interaction ID</th>
+            <th data-key="callType">Type</th>
+            <th data-key="duration" class="num">Duration</th>
+            <th data-key="overallScore" class="num">Overall</th>
+            <th data-key="result">Result</th>
+            <th data-key="primaryCoachingFocus">Primary coaching focus</th>
+          </tr>
+        </thead>
+        <tbody id="callsTbody"></tbody>
+      </table>
+    </div>
+    <div class="detail" id="detailPanel"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Scoring model: Connect 10% &middot; Explore 40% &middot; Quality of Advice 30% &middot; Resolve 20%, weighted from Q1&ndash;Q8 ratings (1&ndash;5).</span>
+    <span id="footGenerated"></span>
+  </footer>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script type="application/json" id="qa-data">{
+  "questions": {
+    "q1": {
+      "section": "connect",
+      "text": "Opened call professionally and stated purpose clearly"
+    },
+    "q2": {
+      "section": "connect",
+      "text": "Active listening and clear communication throughout call"
+    },
+    "q3": {
+      "section": "explore",
+      "text": "Explored student's situation with effective questioning"
+    },
+    "q4": {
+      "section": "explore",
+      "text": "Summarised situation and confirmed understanding before responding"
+    },
+    "q5": {
+      "section": "qualityOfAdvice",
+      "text": "Advice appropriate to student's situation"
+    },
+    "q6": {
+      "section": "qualityOfAdvice",
+      "text": "Options presented clearly to student"
+    },
+    "q7": {
+      "section": "resolve",
+      "text": "Call closed with clear conclusion and confirmed next steps"
+    },
+    "q8": {
+      "section": "resolve",
+      "text": "Student left call feeling supported and confident"
+    }
+  },
+  "sections": [
+    {
+      "key": "connect",
+      "label": "Connect",
+      "weight": 10
+    },
+    {
+      "key": "explore",
+      "label": "Explore",
+      "weight": 40
+    },
+    {
+      "key": "qualityOfAdvice",
+      "label": "Quality of Advice",
+      "weight": 30
+    },
+    {
+      "key": "resolve",
+      "label": "Resolve",
+      "weight": 20
+    }
+  ],
+  "calls": [
+    {
+      "interactionId": "281d303b-647e-44b0-8d41-8bc2f2425a5a",
+      "advisor": "Khushboo Italiya",
+      "callType": "Inbound",
+      "duration": "03:23",
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“I'll just let you know the calls are recorded for training and compliance” (00:33)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested “full name and personal email” (00:33) and customer provided “Arlen Lawrence” and personal email address (00:44) before account-specific discussion commenced."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Professional greeting, recording disclosure, and verification completed. However, the purpose was assumed rather than clearly stated by the advisor at the outset."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor responded directly to the student's questions, clarified the grade discrepancy, and provided clear explanations without requiring repetition."
+        },
+        "q3": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Limited questioning. The advisor primarily responded to student queries and did not use open-ended questions to explore the issue further."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor demonstrated understanding by restating the inquiry and explaining the current status before progressing with advice, although not a formal summary/confirmation."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advice was highly relevant to the student's grade update, graduation eligibility, certificate options, and required next steps."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor explained multiple pathways: attending graduation in Canberra or requesting the award/certificate to be sent out once grades are finalised."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Explained dependency on grade finalisation, outlined actions required with Student Centre, provided graduation timeframe, and checked for further questions before closing."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Student expressed appreciation and appeared satisfied with the explanation and expectations provided."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 7
+        },
+        "explore": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 20
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 27
+        },
+        "resolve": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 18
+        }
+      },
+      "overallScore": 73,
+      "result": "Pass",
+      "primaryCoachingFocus": "Open Questioning",
+      "coachingRecommendation": "The advisor effectively answered the student's questions but relied largely on reactive responses rather than exploratory questioning.",
+      "coachingExample": "“Can you tell me what communication you've received so far from the unit convener?” / “What outcome are you hoping for once the grade is updated?” / “Have you already received any graduation information from Student Centre?”",
+      "coachingBenefits": [
+        "Helps uncover potential concerns earlier.",
+        "Creates opportunities for stronger engagement, clarification, and tailored advice."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_2.docx",
+      "previousEvaluation": {
+        "batch": 1,
+        "overallScore": 67,
+        "result": "Pass",
+        "primaryCoachingFocus": "Open Questioning",
+        "sourceFile": "Interaction_Type_Call_Interaction_ID_dddc443092.docx",
+        "note": "Originally evaluated under an earlier version of the QA rubric; re-evaluated under the current template. The score above supersedes this one."
+      }
+    },
+    {
+      "interactionId": "dddc4430-920f-4921-b786-85fe078b85bb",
+      "advisor": "Nequila Vincent",
+      "callType": "Outbound",
+      "duration": "10:10",
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“The call is recorded for coaching and quality” (00:10)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email address (00:10–00:22). Student provided both before account-specific discussion commenced (00:26)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, identified her role, used the student's name, explained the purpose of the call, and completed compliance requirements early in the interaction."
+        },
+        "q2": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor engaged in discussion, asked follow-up questions, and clarified information. However, there was confusion regarding unit availability, requiring correction and repeated discussion before alignment was reached."
+        },
+        "q3": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor explored the student's study plans, future enrollment intentions, workload, and content-creation commitments before discussing solutions and planning options."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor regularly confirmed understanding of the student's intended study path and reiterated sequencing requirements. Formal summarisation was limited but present."
+        },
+        "q5": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advice was relevant to the student's enrollment and capstone sequencing concerns. However, the student needed to challenge and verify the initial information before the correct study path was confirmed."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "The discussion focused primarily on the required study sequence. Alternative enrollment pathways or contingency options were not explored beyond waiting for future teaching periods."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor confirmed the teaching-period requirements, explained pre-enrollment timing, committed to future outreach when enrollment opens, and checked for any remaining concerns before closing."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor was encouraging, reassured the student regarding future planning, and maintained engagement throughout. The student confirmed no additional concerns before ending the call."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 8
+        },
+        "explore": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 28
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 15
+        },
+        "resolve": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 18
+        }
+      },
+      "overallScore": 69,
+      "result": "Pass",
+      "primaryCoachingFocus": "Presenting Clear Options",
+      "coachingRecommendation": "The advisor demonstrated strong relationship building and effective exploration of the student's plans. The main opportunity is to broaden option discussions when study progression issues arise.",
+      "coachingExample": "“You have a few possible pathways here. You can complete the prerequisite in January and stay on track for the earliest completion date, or defer and complete the sequence later, which may extend your graduation timeline.” Also, when discussing curriculum sequencing, verify information before presenting it as definitive: “Let me quickly confirm the teaching schedule so I can give you the most accurate advice.”",
+      "coachingBenefits": [
+        "Reduce confusion.",
+        "Improve confidence in the guidance provided.",
+        "Strengthen Quality of Advice scores."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_4.docx",
+      "previousEvaluation": {
+        "batch": 1,
+        "overallScore": 55,
+        "result": "Pass",
+        "primaryCoachingFocus": "Summarising and Confirming",
+        "sourceFile": "Interaction_Type_Call_Interaction_ID_dddc443092_4.docx",
+        "note": "Originally evaluated under an earlier version of the QA rubric; re-evaluated under the current template. The score above supersedes this one."
+      }
+    },
+    {
+      "interactionId": "4de19330-d589-44ad-be55-440a5e762de0",
+      "advisor": "Katina Astles",
+      "callType": "Outbound",
+      "duration": "15:41",
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure",
+            "status": "Pass",
+            "evidence": "“the call is being recorded for quality and training purposes” (00:21)"
+          },
+          {
+            "requirement": "Identity Verification",
+            "status": "Pass",
+            "evidence": "Advisor confirmed full name and personal email address before discussing account-specific information (00:21–00:38)"
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, identified ECU, used the student's name, explained the call purpose, disclosed recording, and completed verification within the opening exchanges."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor responded directly to student concerns, asked follow-up questions, built on student comments, and maintained a conversational flow. Student was not required to repeat information."
+        },
+        "q3": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor asked questions about unit progress, access to resources, and future study intentions. Exploration occurred but was not deeply focused on uncovering underlying concerns before providing advice."
+        },
+        "q4": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Advice regarding AI use and future pathways was provided without explicitly summarising and confirming the student's situation first. There was no clear confirmation statement before advice commenced."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advice was highly tailored to the student's comments regarding assignment word counts, AI concerns, enrolment questions, Graduate Diploma Advanced requirements, Master's pathways, and regional study limitations."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor provided multiple relevant options, including alternative AI approaches, different Master's entry pathways, varying university requirements, online versus face-to-face programs, and enrolment support options."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor committed to sending the AI playbook, confirmed enrolment timeframes, invited future contact, and reinforced available support. Clear next steps and timelines were provided."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor praised academic performance, reassured the student regarding eligibility, provided encouraging guidance, and helped the student understand future study options. Student ended the call positively and appreciatively."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 9
+        },
+        "explore": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 20
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 30
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 79,
+      "result": "Pass",
+      "primaryCoachingFocus": "Summarising and Confirming",
+      "coachingRecommendation": "Before moving into detailed advice, briefly summarise the student's situation and confirm understanding.",
+      "coachingExample": "“Just so I've got this right, you're enjoying the course overall, but you're finding the shorter word-count assignments challenging because there's a lot to cover in a limited space. Is that correct?”",
+      "coachingBenefits": [
+        "Demonstrate active listening.",
+        "Ensure advice is aligned to the student's actual concern.",
+        "Reduce assumptions before providing solutions.",
+        "Improve performance in Q4 and strengthen the Explore section overall."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [
+        "Excellent rapport and natural conversational style.",
+        "Highly personalised and relevant advice.",
+        "Strong knowledge of academic progression pathways.",
+        "Effective use of encouragement and confidence-building language.",
+        "Clear ownership of follow-up actions and support."
+      ],
+      "batch": 1,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_dddc443092_2.docx",
+      "duplicateOf": null,
+      "duplicateFiles": [
+        "Interaction_Type_Call_Interaction_ID_dddc443092_3.docx"
+      ]
+    },
+    {
+      "interactionId": "f8a64e3f-0f26-43b6-a699-a6ce5a4a931a",
+      "advisor": "Nova Brownlie",
+      "callType": "Outbound",
+      "duration": "46:24",
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure",
+            "status": "Pass",
+            "evidence": "“calls are recorded for training” (00:07)"
+          },
+          {
+            "requirement": "Identity Verification",
+            "status": "Pass",
+            "evidence": "Advisor confirmed full name and personal email before discussing student-specific information (00:07–00:25)"
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, identified ECU, provided recording disclosure, completed identity verification, and commenced with a supportive check-in regarding the student's transition into study."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Strong examples of reflective listening, reassurance, empathy and follow-up questions throughout a lengthy interaction. Advisor adapted the discussion based on the student's concerns regarding technology, learning style, assessments, and study planning. Student never needed to repeat concerns to be understood."
+        },
+        "q3": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor explored learning preferences, technology confidence, work commitments, future study plans, assessment concerns, support needs, and preferred contact frequency. Multiple open questions uncovered the root cause of the student's anxiety about online study."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor regularly acknowledged concerns and reflected information back to the student, particularly regarding technology anxiety and study planning. However, there were limited examples of explicit summarising and confirmation before moving into advice."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advice was highly personalised to a mature-age returning student. Guidance covered Canvas navigation, assignment prioritisation, virtual classrooms, assessment structures, learning advisors, technology support, course sequencing, academic skills support, and submission processes."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor provided multiple options throughout the call including unit selection pathways, learning support services, technology support, study approaches, learning advisor support, YouTube tutorials, contact methods, and flexible support arrangements."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor confirmed follow-up actions, outlined email resources to be sent, agreed to weekly check-ins, explained contact methods, checked for additional questions, and provided clear support channels."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Student repeatedly expressed appreciation for the support and guidance. Advisor provided strong reassurance tailored to the student's concerns, normalised the learning curve, committed to ongoing support, and ended with positive encouragement (“You've got this. I'm cheering you all the way”)."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 10
+        },
+        "explore": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 32
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 30
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 92,
+      "result": "Pass",
+      "primaryCoachingFocus": "Summarising and Confirming",
+      "coachingRecommendation": "This was a very strong student-centered interaction with excellent rapport and support. The main improvement opportunity is to introduce more explicit summaries before providing complex advice.",
+      "coachingExample": "“Just to make sure I've understood correctly, you're comfortable with the written assessments, but you're most concerned about the technology requirements, presentations, and navigating Canvas because it's been a long time since you've studied online. Is that right?”",
+      "coachingBenefits": [
+        "Further strengthen active listening.",
+        "Help organise lengthy conversations.",
+        "Ensure advice remains focused on the student's priority concern.",
+        "Elevate Q4 performance from Meets to Exceeds."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [
+        "Outstanding rapport building and empathy.",
+        "Excellent support for a mature-age student experiencing anxiety.",
+        "Strong exploration of barriers and confidence challenges.",
+        "Highly personalised study planning advice.",
+        "Clear ownership of follow-up and ongoing student support.",
+        "Effective reassurance without dismissing concerns.",
+        "Strong closing and confidence-building language."
+      ],
+      "batch": 1,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_dddc443092_1.docx"
+    },
+    {
+      "interactionId": "e08df36d-e68a-4034-a019-5430c64dcffd",
+      "advisor": "Khushboo Italiya",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“I'll just let you know the calls are recorded for training and compliance” (00:09)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested “full name and personal email” (00:09) and customer provided “Bulwinder Kaur” and personal email address (00:20) before account discussion commenced."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, organisation, recording disclosure, and clearly stated the reason for the call (“returning your voicemail”) within the opening exchanges."
+        },
+        "q2": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor responded appropriately to information provided and clarified the enrollment issue. Communication was clear, though the call was brief with limited opportunity to demonstrate advanced active listening techniques."
+        },
+        "q3": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Limited exploration of the underlying enrollment issue. Advisor moved quickly to a solution without asking open-ended questions to fully understand the situation."
+        },
+        "q4": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "No clear summary or confirmation of understanding prior to offering a resolution pathway."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advice was tailored to the student's enrollment barrier and considered the issue of closed enrollments and advisor intervention requirements."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Only one resolution pathway was offered (emailing the student advisor). No alternative options were discussed."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor clearly explained the next action, advised she would send the email, and committed to contacting the student once an outcome was received."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor took ownership, acted proactively, and provided reassurance that she would follow up regarding the enrollment outcome."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 8
+        },
+        "explore": {
+          "avgLabel": "2/5",
+          "pct": 40,
+          "weighted": 16
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 18
+        },
+        "resolve": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 18
+        }
+      },
+      "overallScore": 59,
+      "result": "Pass",
+      "primaryCoachingFocus": "Open Questioning",
+      "coachingRecommendation": "The advisor moved quickly into problem-solving without fully exploring the student's circumstances.",
+      "coachingExample": "“Can you tell me exactly what the student advisor advised?” / “What course or unit are you trying to enroll into?” / “What happens when you attempt the enrollment?”",
+      "coachingBenefits": [
+        "Helps uncover the root cause.",
+        "Improves ownership of the issue.",
+        "Supports stronger exploration and advice scores."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_1.docx"
+    },
+    {
+      "interactionId": "a85e6d44-c0ee-46e2-9d57-e08436b60f55",
+      "advisor": "Khushboo Italiya",
+      "callType": "Inbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“I'll just let you know the calls are recorded for training and compliance” (00:36–00:56)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email (00:56), and the student provided both before account-specific discussion continued (00:59–01:05)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, institution, explained she was following up from a previous interaction, used the student's name, and completed compliance requirements promptly."
+        },
+        "q2": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor listened and remained patient throughout a lengthy navigation discussion. However, the student repeatedly expressed confusion and needed information repeated multiple times, indicating communication could have been clearer and more adaptive."
+        },
+        "q3": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor asked exploratory questions such as “What's happening?” and clarified whether the student meant tutorials, classes, course material, or assessments. Some root-cause exploration occurred regarding late enrolment and course access."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor periodically restated concerns, such as confirming the student wanted guidance on assignment requirements and acknowledging the late enrolment issue. More explicit summarising would have strengthened the interaction."
+        },
+        "q5": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advice was generally appropriate, including guidance on locating course materials, accessing tutorials, contacting the unit convener, and reaching out to IT support. However, the student required significant redirection and clarification throughout the call."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "The primary advice focused on contacting the unit convener. Few alternative support pathways were explored despite the student's confusion and concerns regarding assessment requirements and late commencement."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor clearly directed the student to email the unit convener, review recordings, contact IT where required, offered follow-up support, and checked for additional questions before closing."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor reassured the student, provided contact details via email, committed to future check-ins, and the student expressed appreciation at the end of the call."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 8
+        },
+        "explore": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 24
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 15
+        },
+        "resolve": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 18
+        }
+      },
+      "overallScore": 65,
+      "result": "Pass",
+      "primaryCoachingFocus": "Presenting Clear Options and Simplifying Guidance",
+      "coachingRecommendation": "The student was clearly overwhelmed by the learning platform and repeatedly expressed confusion. While the advisor ultimately guided the student to the correct location and support contact, the interaction would have been stronger with a simpler structure and clearer options.",
+      "coachingExample": "“Let's break this into three steps: access your modules for the reading material, attend or review tutorial recordings, email your unit convener regarding Assessment 1.” Additionally: “You can contact your unit convener, review the tutorial recordings, attend the next tutorial for questions, and use academic support resources if needed.”",
+      "coachingBenefits": [
+        "Reduces confusion.",
+        "Improves student confidence.",
+        "Helps drive stronger Quality of Advice scores."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_3.docx"
+    },
+    {
+      "interactionId": "d6439b87-b831-4414-a9c5-8c9c70af38db",
+      "advisor": "Khushboo Italiya",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Fail",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“I'll just let you know the calls are recorded for training and compliance” (00:08)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes (Full Name + Personal Email or Student ID)",
+            "status": "Fail",
+            "evidence": "Advisor requested full name and email, however the transcript only clearly evidences collection of an email address. A verified first and last name cannot be conclusively confirmed from the transcript before proceeding."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Warm greeting, used student's name and explained purpose was to check in. Institution/organisation introduction not clearly stated."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Demonstrated empathy, acknowledged circumstances, asked follow-up questions, and allowed the student to speak extensively."
+        },
+        "q3": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Asked open questions such as “How are you going?” and explored study return timing. However, exploration was limited and largely student-led."
+        },
+        "q4": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "No clear summary or confirmation of understanding before providing advice or recommendations."
+        },
+        "q5": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advice was relevant to enrolment planning and encouraging use of safety resources, though somewhat generic."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Limited presentation of alternatives. Student was mainly provided a single enrolment pathway and general resource suggestions."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Confirmed enrolment call for Tuesday at 10:00am and clearly set expectations."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Consistent empathy, reassurance, and encouragement to access support resources."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 7
+        },
+        "explore": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 20
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 15
+        },
+        "resolve": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 16
+        }
+      },
+      "overallScore": 58,
+      "result": "Auto-Fail",
+      "primaryCoachingFocus": "Identity Verification",
+      "coachingRecommendation": "Before discussing the student's circumstances or account-related matters, explicitly verify: full first and last name; personal email address or student ID. Confirm both pieces of information verbally before progressing.",
+      "coachingExample": "“Before we continue, can I please confirm your full name and personal email address for verification?”",
+      "coachingBenefits": [
+        "Ensures compliance can be clearly evidenced in the transcript.",
+        "Avoids automatic failure despite otherwise strong rapport and empathy."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "requiredAction": "Compliance coaching/debrief within 48 hours. Focus on explicitly confirming and recording the student's full first and last name before proceeding with account-related discussion.",
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8.docx"
+    },
+    {
+      "interactionId": "ffc7b1e2-8ac2-40ee-b08d-ec310620fe9b",
+      "advisor": "Katina Astles",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“The call is being recorded for quality and training purposes” (00:14–00:24)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email address (00:14–00:34), and the student provided both before account-specific discussion continued (00:35)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, organisation, used the student's name, clearly explained the purpose of the call (graduation congratulations), and completed compliance requirements."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor responded appropriately to the student's questions, acknowledged achievements, and communicated graduation information clearly and conversationally."
+        },
+        "q3": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Limited questioning beyond confirming transcript access. The interaction was primarily informational with minimal exploration of the student's circumstances or goals."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor confirmed whether the student had accessed their transcript and responded directly to graduation questions. Formal summarisation was limited but adequate for the call type."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advice was relevant and tailored to graduation, transcript access, ceremony attendance, deferment options, and accessing results via My eQuals."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor clearly explained multiple options including attending the Perth graduation ceremony, deferring to a later ceremony, or requesting the testamur be posted."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor outlined next steps regarding checking ECU email, SIMO messages, My eQuals access, and encouraged the student to make contact if assistance was required."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor delivered positive recognition, reassurance, and ongoing support. The student expressed appreciation and confidence in next steps."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 9
+        },
+        "explore": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 20
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 27
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 74,
+      "result": "Pass",
+      "primaryCoachingFocus": "Open Questioning",
+      "coachingRecommendation": "This was a positive and professional graduation call with strong rapport and clear guidance. To strengthen the Explore domain, incorporate a few open-ended questions that encourage reflection and uncover additional support opportunities.",
+      "coachingExample": "“What are your plans now that you've completed your qualification?” / “How did you find your study journey overall?” / “Is there anything you'd like support with before graduation?”",
+      "coachingBenefits": [
+        "Generates richer conversations.",
+        "Increases student engagement.",
+        "Improves Explore scores while maintaining the congratulatory tone of the interaction."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_8.docx"
+    },
+    {
+      "interactionId": "c41897a5-b105-4464-875b-884aeae35e64",
+      "advisor": "Katina Astles",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“The call is being recorded for quality and training purposes” (00:32)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email (00:32–00:40), and the student provided both before account-specific information was discussed further (00:45)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Warm introduction, advisor identified herself and organisation, used the student's name, and clearly stated the purpose of the call was to congratulate the student on graduating."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor responded naturally to the student's comments, acknowledged achievements, and tailored the conversation to the student's graduation milestone."
+        },
+        "q3": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Limited exploration. The call was largely informational and congratulatory, with few questions beyond confirming receipt of graduation-related information."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor confirmed receipt of the digital transcript and checked the student's understanding of graduation communications, though no detailed summary was required for the nature of the call."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Information provided was highly relevant, including digital transcript access, graduation timelines, ceremony attendance options, and where to monitor communications."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor clearly outlined options to attend graduation or have the testamur sent if unable to attend the ceremony."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor confirmed upcoming graduation communications, advised the student where to look for updates, offered ongoing support, and closed positively."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Strong recognition of achievement, positive reinforcement throughout, and continued support offered. Student expressed appreciation and satisfaction."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 9
+        },
+        "explore": {
+          "avgLabel": "2.5/5",
+          "pct": 50,
+          "weighted": 20
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 27
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 74,
+      "result": "Pass",
+      "primaryCoachingFocus": "Open Questioning",
+      "coachingRecommendation": "This was a strong, student-focused congratulatory call with excellent rapport and positive reinforcement. The primary opportunity is to incorporate additional exploratory questions to better understand the student's plans and identify opportunities for further engagement.",
+      "coachingExample": "“What are your plans now that you've completed the program?” / “How did you find the overall study experience?” / “Is there anything you'd like support with as you transition after graduation?”",
+      "coachingBenefits": [
+        "Helps uncover alumni engagement opportunities.",
+        "Gathers valuable student feedback.",
+        "Strengthens the Explore component of the rubric while maintaining the positive nature of the call."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_7.docx"
+    },
+    {
+      "interactionId": "90e3573f-2206-45b8-ba27-087ac61a3875",
+      "advisor": "Nova Brownlie",
+      "callType": "Inbound",
+      "duration": null,
+      "compliance": {
+        "result": "Fail",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“Calls recorded for training” disclosed at approximately 01:25."
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Fail",
+            "evidence": "Advisor requested a student ID or name only. The student provided their name, but a full verification using first and last name plus either student ID or personal email was not completed before account-specific discussion occurred."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor introduced herself professionally and invited the student to explain the query. Purpose was established through the student's explanation rather than a clear advisor-led purpose statement."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor allowed the student to explain a complex situation, acknowledged confusion, asked clarifying questions, and tailored responses to the circumstances."
+        },
+        "q3": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor asked multiple clarifying questions regarding the extension request, timeline, assessment submission status, unit code, and communication from the unit coordinator before recommending actions."
+        },
+        "q4": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor restated the issue several times, confirming understanding that the extension was approved retrospectively and the student was unsure how to proceed."
+        },
+        "q5": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advice was generally relevant; however, the guidance shifted between special consideration, withdrawal, grade appeal, and submission options without a definitive resolution path."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Multiple pathways were discussed, including special consideration, submitting the assessment, appealing grades, and discussing options with the student's assigned advisor."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor committed to briefing the student's Student Success Advisor, arranging contact, reviewing the scenario, and providing further guidance."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "The student expressed appreciation, felt heard, and was reassured that follow-up support would be provided."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 7
+        },
+        "explore": {
+          "avgLabel": "4/5",
+          "pct": 80,
+          "weighted": 32
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 21
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 80,
+      "result": "Auto-Fail",
+      "primaryCoachingFocus": "Identity Verification",
+      "coachingRecommendation": "This was a strong support interaction with effective listening, exploration, and ownership of the student's issue. However, the call automatically fails due to incomplete identity verification.",
+      "coachingExample": "“Before I access your account, can I please confirm your full name and either your student ID number or personal email address?”",
+      "coachingBenefits": [
+        "Protects student privacy.",
+        "Ensures compliance requirements are met.",
+        "Prevents avoidable Auto-Fail outcomes on otherwise high-quality calls."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "requiredAction": "Compliance coaching/debrief within 48 hours. Reinforce the requirement to verify the student's full name and either a student ID or personal email before discussing account-specific information.",
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_10.docx"
+    },
+    {
+      "interactionId": "e3d42d70-1e42-4944-a38b-f1d9f81200de",
+      "advisor": "Nova Brownlie",
+      "callType": "Inbound",
+      "duration": null,
+      "compliance": {
+        "result": "Fail",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“Calls were recorded for training” (01:10–01:20), disclosed within the first two minutes."
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Fail",
+            "evidence": "Advisor requested only student ID/last name (00:56) and proceeded to discuss account-specific details. Full first and last name plus personal email (or student ID) were not verified in accordance with requirements."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor introduced herself and engaged promptly with the inquiry, though there was limited explanation of role or purpose at the outset."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor listened carefully, clarified the student's issue regarding the completion certificate, checked multiple possibilities, and explained the likely process clearly."
+        },
+        "q3": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor asked clarifying questions regarding student identity, previous emails, junk mail, and whether My eQuals notifications had been received."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor confirmed that the student had not received the My eQuals email before recommending contact with Student Records."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advice was directly relevant to the issue, including explaining My eQuals and referring the student to the appropriate Student Records team for certificate retrieval."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "Only one primary pathway was provided (contact Student Records). Alternative options or escalation paths were not discussed."
+        },
+        "q7": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor provided the correct email address, explained who to contact, and outlined the expected outcome."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Student expressed appreciation and appeared satisfied with the guidance provided."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 7
+        },
+        "explore": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 24
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 18
+        },
+        "resolve": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 14
+        }
+      },
+      "overallScore": 64,
+      "result": "Auto-Fail",
+      "primaryCoachingFocus": "Identity Verification",
+      "coachingRecommendation": "The advisor effectively identified the student's issue and directed them to the appropriate resolution pathway. However, the call resulted in an automatic compliance failure because identity verification requirements were not fully met before account information was accessed and discussed.",
+      "coachingExample": "“Before I access your account, can I please confirm your full name and either your personal email address or student ID number?”",
+      "coachingBenefits": [
+        "Compliance requirements are met consistently.",
+        "Student privacy is protected.",
+        "Auto-fail outcomes are avoided regardless of overall call quality."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "requiredAction": "Compliance coaching/debrief within 48 hours. Reinforce the requirement to verify both the student's full name and either a personal email address or student ID before discussing account-specific information.",
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_9.docx"
+    },
+    {
+      "interactionId": "e751b41b-613e-4825-abdd-e597be3728dc",
+      "advisor": "Nequila Vincent",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“The call is being recorded for coaching and quality purposes” (00:10)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email address (00:10), and the student provided both before account-specific discussion began (00:27)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, organisation, role, welcomed the student, completed compliance requirements, and clearly explained the purpose of the call."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor listened carefully to concerns about workload, assignment expectations, and study pace. Responses directly addressed the student's concerns and built on information shared throughout the conversation."
+        },
+        "q3": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor asked open questions about study progress, concerns, previous study experience, and challenges adapting to accelerated online learning before providing practical advice."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor demonstrated understanding by restating the student's concerns about time management, assignment expectations, and first-time study challenges. More explicit summary and confirmation would strengthen performance further."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advice was highly tailored to the student's circumstances, focusing on prioritising assignments, using learning advisors, leveraging available resources, and managing accelerated study requirements."
+        },
+        "q6": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor outlined multiple support pathways including learning advisors, academic skills workshops, unit coordinators, peer support services, and direct SSA support."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor outlined next steps, confirmed follow-up actions, committed to sending resources, arranged fortnightly check-ins, and checked for additional concerns before closing."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Strong reassurance throughout. Advisor normalised the student's experience, highlighted available support networks, praised progress, and established ongoing contact. Student explicitly thanked the advisor and stated concerns had been addressed."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 9
+        },
+        "explore": {
+          "avgLabel": "3.5/5",
+          "pct": 70,
+          "weighted": 28
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 27
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 84,
+      "result": "Pass",
+      "primaryCoachingFocus": "Summarising and Confirming",
+      "coachingRecommendation": "This was a strong student support interaction with excellent rapport, reassurance, and proactive support planning. The key opportunity is to strengthen summaries before moving into advice.",
+      "coachingExample": "“Just to make sure I've understood correctly: you're new to university study, you're spending a lot of time on discussion activities, you're worried you're falling behind, and you're unsure how much detail is expected in Assessment 1. Is that right?”",
+      "coachingBenefits": [
+        "Confirms understanding of the student's core concern.",
+        "Increases student confidence that they have been heard.",
+        "Improves Explore scores by demonstrating structured problem diagnosis.",
+        "Creates a smoother transition into tailored advice."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_5.docx"
+    },
+    {
+      "interactionId": "ce8fcc5b-b8b8-458e-a554-6347d10713bb",
+      "advisor": "Nequila Vincent",
+      "callType": "Outbound",
+      "duration": null,
+      "compliance": {
+        "result": "Pass",
+        "checklist": [
+          {
+            "requirement": "Recording Disclosure within first 2 minutes",
+            "status": "Pass",
+            "evidence": "“The call is recorded for coaching and quality” (00:31)"
+          },
+          {
+            "requirement": "Identity Verification within first 2 minutes",
+            "status": "Pass",
+            "evidence": "Advisor requested full name and personal email address (00:31–00:38), and the student provided both before account-specific discussion continued (00:42)."
+          }
+        ]
+      },
+      "questions": {
+        "q1": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor introduced herself, identified her role, used the student's name, completed compliance requirements, and explained the reason for the call."
+        },
+        "q2": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advisor acknowledged the student's circumstances, responded appropriately to concerns, referenced previous conversations, and asked relevant follow-up questions."
+        },
+        "q3": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor asked clarifying questions regarding the enrollment issue, timelines, and previous follow-up actions. Exploration occurred but was relatively limited."
+        },
+        "q4": {
+          "rating": "Meets",
+          "score": 3,
+          "rationale": "Advisor demonstrated understanding of the enrollment blockage and confirmed details regarding Student Services and lecturer follow-up before proposing action."
+        },
+        "q5": {
+          "rating": "Exceeds",
+          "score": 4,
+          "rationale": "Advice was tailored to the student's issue, including reviewing the existing correspondence and escalating the matter through additional channels to seek resolution."
+        },
+        "q6": {
+          "rating": "Does Not Meet",
+          "score": 2,
+          "rationale": "The advisor largely presented a single path forward, forwarding the email thread for escalation. Alternative avenues or contingency options were not discussed."
+        },
+        "q7": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor clearly explained next steps, committed to sending an email, requested the thread for review, and outlined the intent to pursue an earlier resolution."
+        },
+        "q8": {
+          "rating": "Exceeds",
+          "score": 5,
+          "rationale": "Advisor provided encouragement, recognised the student's academic success despite personal challenges, took ownership of follow-up actions, and the student expressed appreciation."
+        }
+      },
+      "sections": {
+        "connect": {
+          "avgLabel": "4.5/5",
+          "pct": 90,
+          "weighted": 9
+        },
+        "explore": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 24
+        },
+        "qualityOfAdvice": {
+          "avgLabel": "3/5",
+          "pct": 60,
+          "weighted": 18
+        },
+        "resolve": {
+          "avgLabel": "5/5",
+          "pct": 100,
+          "weighted": 20
+        }
+      },
+      "overallScore": 73,
+      "result": "Pass",
+      "primaryCoachingFocus": "Presenting Clear Options",
+      "coachingRecommendation": "The advisor built excellent rapport and demonstrated strong ownership of the student's issue. The main opportunity is to provide a broader range of options when an enrollment barrier exists.",
+      "coachingExample": "“I'll escalate the email thread on your behalf. If we don't receive a response within a few days, we can also involve Student Services again or seek assistance from the School administration team.”",
+      "coachingBenefits": [
+        "Helps students understand available contingencies.",
+        "Increases confidence that there is a clear plan if the first action does not resolve the issue."
+      ],
+      "additionalCoachingOpportunity": null,
+      "strengths": [
+        "Strong empathy and recognition of the student's achievement.",
+        "Willingness to personally assist and take ownership of follow-up."
+      ],
+      "batch": 2,
+      "batchDate": "2026-09-03",
+      "sourceFile": "Interaction_Type_Call_Interaction_ID_d6439b87b8_6.docx"
+    }
+  ],
+  "meta": {
+    "generatedDate": "2026-09-03",
+    "batches": [
+      {
+        "id": 1,
+        "label": "Batch 1",
+        "date": "2026-09-03",
+        "filesUploaded": 5,
+        "uniqueCalls": 4,
+        "duplicatesSkipped": 1,
+        "note": "Files _2 and _3 were identical exports of the same interaction (Katina Astles, 4de19330…) and were counted once."
+      },
+      {
+        "id": 2,
+        "label": "Batch 2",
+        "date": "2026-09-03",
+        "filesUploaded": 11,
+        "uniqueCalls": 11,
+        "duplicatesSkipped": 0,
+        "revaluatedCalls": 2,
+        "note": "Uploaded under an updated “QA Evaluation Summary” template that also flags compliance Auto-Fails. 2 of these interactions (Khushboo Italiya 281d303b…, Nequila Vincent dddc4430…) were already on file from Batch 1 under the earlier template; the Batch 2 score for each supersedes its Batch 1 score — open the call's detail view to see the prior result."
+      }
+    ]
+  }
+}</script>
+<script>
+(function () {
+  "use strict";
+  const RAW = JSON.parse(document.getElementById('qa-data').textContent);
+  const QUESTIONS = RAW.questions;
+  const SECTIONS = RAW.sections;
+  const CALLS = RAW.calls;
+  const META = RAW.meta;
+
+  const SECTION_COLOR = {
+    connect: 'var(--sec-connect)',
+    explore: 'var(--sec-explore)',
+    qualityOfAdvice: 'var(--sec-qoa)',
+    resolve: 'var(--sec-resolve)'
+  };
+  const ADVISOR_SLOTS = ['var(--adv-1)', 'var(--adv-2)', 'var(--adv-3)', 'var(--adv-4)'];
+
+  // stable adviser -> color assignment, by order of first appearance
+  const advisorOrder = [];
+  CALLS.forEach(c => { if (!advisorOrder.includes(c.advisor)) advisorOrder.push(c.advisor); });
+  const advisorColor = {};
+  advisorOrder.forEach((name, i) => { advisorColor[name] = ADVISOR_SLOTS[i % ADVISOR_SLOTS.length]; });
+
+  const fmtPct = v => Math.round(v) + '%';
+  const clean = s => s.replace(/[^a-zA-Z0-9]/g, '');
+
+  function el(tag, cls, html) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+
+  // ---------------- tooltip ----------------
+  const tooltip = document.getElementById('tooltip');
+  function showTip(e, html) {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('show');
+    moveTip(e);
+  }
+  function moveTip(e) {
+    const pad = 14;
+    let x = e.clientX + pad, y = e.clientY + pad;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
+  function hideTip() { tooltip.classList.remove('show'); }
+
+  // ---------------- filters ----------------
+  const filters = { advisor: '', callType: '', result: '', focus: '' };
+
+  function uniqueSorted(arr) { return Array.from(new Set(arr)).sort(); }
+
+  function populateSelect(id, values, key) {
+    const sel = document.getElementById(id);
+    values.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => { filters[key] = sel.value; render(); });
+  }
+
+  populateSelect('fAdvisor', advisorOrder, 'advisor');
+  populateSelect('fCallType', uniqueSorted(CALLS.map(c => c.callType)), 'callType');
+  populateSelect('fResult', uniqueSorted(CALLS.map(c => c.result)), 'result');
+  populateSelect('fFocus', uniqueSorted(CALLS.map(c => c.primaryCoachingFocus)), 'focus');
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    filters.advisor = filters.callType = filters.result = filters.focus = '';
+    ['fAdvisor','fCallType','fResult','fFocus'].forEach(id => document.getElementById(id).value = '');
+    render();
+  });
+
+  function filteredCalls() {
+    return CALLS.filter(c =>
+      (!filters.advisor || c.advisor === filters.advisor) &&
+      (!filters.callType || c.callType === filters.callType) &&
+      (!filters.result || c.result === filters.result) &&
+      (!filters.focus || c.primaryCoachingFocus === filters.focus)
+    );
+  }
+
+  // ---------------- header ----------------
+  document.getElementById('lastUpdated').textContent = META.generatedDate;
+  document.getElementById('callSummary').textContent = CALLS.length + ' call' + (CALLS.length === 1 ? '' : 's') + ' on file';
+  document.getElementById('footGenerated').textContent = 'Generated ' + META.generatedDate;
+
+  // ---------------- aggregation ----------------
+  function aggregateByAdvisor(calls) {
+    const map = {};
+    calls.forEach(c => {
+      if (!map[c.advisor]) {
+        map[c.advisor] = { advisor: c.advisor, calls: 0, overallSum: 0, sectionSum: { connect: 0, explore: 0, qualityOfAdvice: 0, resolve: 0 }, passCount: 0, focusCounts: {} };
+      }
+      const a = map[c.advisor];
+      a.calls += 1;
+      a.overallSum += c.overallScore;
+      SECTIONS.forEach(s => { a.sectionSum[s.key] += c.sections[s.key].pct; });
+      if (c.compliance.result === 'Pass') a.passCount += 1;
+      a.focusCounts[c.primaryCoachingFocus] = (a.focusCounts[c.primaryCoachingFocus] || 0) + 1;
+    });
+    return Object.values(map).map(a => {
+      const topFocus = Object.entries(a.focusCounts).sort((x, y) => y[1] - x[1])[0];
+      return {
+        advisor: a.advisor,
+        calls: a.calls,
+        overall: a.overallSum / a.calls,
+        connect: a.sectionSum.connect / a.calls,
+        explore: a.sectionSum.explore / a.calls,
+        qualityOfAdvice: a.sectionSum.qualityOfAdvice / a.calls,
+        resolve: a.sectionSum.resolve / a.calls,
+        compliance: (a.passCount / a.calls) * 100,
+        focus: topFocus ? topFocus[0] : '—'
+      };
+    });
+  }
+
+  // ---------------- KPI tiles ----------------
+  function renderKpis(calls) {
+    const row = document.getElementById('kpiRow');
+    row.innerHTML = '';
+    const nAdvisors = uniqueSorted(calls.map(c => c.advisor)).length;
+    const avgOverall = calls.length ? calls.reduce((a, c) => a + c.overallScore, 0) / calls.length : 0;
+    const compliancePassRate = calls.length ? (calls.filter(c => c.compliance.result === 'Pass').length / calls.length) * 100 : 0;
+    const autoFailCount = calls.filter(c => c.result === 'Auto-Fail').length;
+    const tiles = [
+      { label: 'Calls evaluated', value: calls.length, sub: 'total on file' },
+      { label: 'Average overall score', value: fmtPct(avgOverall), sub: 'across all evaluated calls' },
+      { label: 'Compliance pass rate', value: fmtPct(compliancePassRate), sub: 'recording disclosure + ID verification' },
+      { label: 'Auto-Fail calls', value: autoFailCount, sub: calls.length ? fmtPct((autoFailCount / calls.length) * 100) + ' of evaluated calls' : 'no calls in view', warn: autoFailCount > 0 },
+      { label: 'Advisers tracked', value: nAdvisors, sub: 'with at least one evaluation' }
+    ];
+    tiles.forEach(t => {
+      const tile = el('div', 'kpi' + (t.warn ? ' warn' : ''));
+      tile.appendChild(el('div', 'label', t.label));
+      tile.appendChild(el('div', 'value' + (String(t.value).length > 3 ? ' small' : ''), String(t.value)));
+      tile.appendChild(el('div', 'sub', t.sub));
+      row.appendChild(tile);
+    });
+  }
+
+  // ---------------- advisor table ----------------
+  let advisorSort = { key: 'overall', dir: -1 };
+  function renderAdvisorTable(calls) {
+    const data = aggregateByAdvisor(calls);
+    data.sort((a, b) => {
+      const k = advisorSort.key;
+      if (typeof a[k] === 'string') return a[k].localeCompare(b[k]) * advisorSort.dir;
+      return (a[k] - b[k]) * advisorSort.dir;
+    });
+    const tbody = document.getElementById('advisorTbody');
+    tbody.innerHTML = '';
+    if (!data.length) {
+      tbody.appendChild(el('tr', '', '<td colspan="9" class="muted" style="padding:20px;text-align:center">No calls match the current filters.</td>'));
+    }
+    data.forEach(a => {
+      const tr = el('tr');
+      if (a.advisor === selectedAdvisor) tr.classList.add('selected');
+      tr.innerHTML =
+        '<td><span class="name-chip"><span class="dot" style="background:' + advisorColor[a.advisor] + '"></span>' + a.advisor + '</span></td>' +
+        '<td class="num">' + a.calls + '</td>' +
+        '<td class="num">' + barCell(a.overall, 'var(--accent)') + '</td>' +
+        '<td class="num">' + fmtPct(a.connect) + '</td>' +
+        '<td class="num">' + fmtPct(a.explore) + '</td>' +
+        '<td class="num">' + fmtPct(a.qualityOfAdvice) + '</td>' +
+        '<td class="num">' + fmtPct(a.resolve) + '</td>' +
+        '<td class="num">' + fmtPct(a.compliance) + '</td>' +
+        '<td>' + a.focus + '</td>';
+      tr.addEventListener('click', () => {
+        const panel = document.getElementById('adviserDetailPanel');
+        if (selectedAdvisor === a.advisor) {
+          selectedAdvisor = null;
+          panel.classList.remove('open');
+          renderAdvisorTable(filteredCalls());
+          return;
+        }
+        selectedAdvisor = a.advisor;
+        openAdviserDetail(a.advisor);
+        renderAdvisorTable(filteredCalls());
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function barCell(pct, color) {
+    return '<div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div><span>' + fmtPct(pct) + '</span></div>';
+  }
+
+  document.querySelectorAll('#advisorTable th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.getAttribute('data-key');
+      if (advisorSort.key === key) advisorSort.dir *= -1; else { advisorSort.key = key; advisorSort.dir = -1; }
+      document.querySelectorAll('#advisorTable th').forEach(t => t.classList.remove('sorted'));
+      th.classList.add('sorted');
+      th.setAttribute('data-arrow', advisorSort.dir === -1 ? '↓' : '↑');
+      renderAdvisorTable(filteredCalls());
+    });
+  });
+
+  // ---------------- adviser detail panel ----------------
+  const METRICS = [
+    { key: 'overall', label: 'Overall Score', color: 'var(--accent)', getPct: c => c.overallScore },
+    { key: 'connect', label: 'Connect', color: SECTION_COLOR.connect, getPct: c => c.sections.connect.pct },
+    { key: 'explore', label: 'Explore', color: SECTION_COLOR.explore, getPct: c => c.sections.explore.pct },
+    { key: 'qualityOfAdvice', label: 'Quality of Advice', color: SECTION_COLOR.qualityOfAdvice, getPct: c => c.sections.qualityOfAdvice.pct },
+    { key: 'resolve', label: 'Resolve', color: SECTION_COLOR.resolve, getPct: c => c.sections.resolve.pct }
+  ];
+  let selectedAdvisor = null;
+  let selectedMetric = 'overall';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    const e = document.createElementNS(svgNS, tag);
+    Object.entries(attrs || {}).forEach(([k, v]) => e.setAttribute(k, v));
+    return e;
+  }
+
+  function openAdviserDetail(name) {
+    const panel = document.getElementById('adviserDetailPanel');
+    const advCalls = filteredCalls().filter(c => c.advisor === name);
+    panel.innerHTML = '';
+
+    if (!advCalls.length) { panel.classList.remove('open'); return; }
+
+    const toolbar = el('div', 'detail-toolbar');
+    const closeBtn = el('button', 'close-btn', 'Close ✕');
+    closeBtn.addEventListener('click', () => {
+      selectedAdvisor = null;
+      panel.classList.remove('open');
+      renderAdvisorTable(filteredCalls());
+    });
+    toolbar.appendChild(closeBtn);
+    panel.appendChild(toolbar);
+
+    const agg = aggregateByAdvisor(advCalls)[0];
+
+    const head = el('div', 'adviser-head');
+    head.innerHTML =
+      '<div><h3><span class="dot" style="background:' + advisorColor[name] + '"></span>' + name + '</h3>' +
+      '<div class="meta">' + agg.calls + ' call' + (agg.calls === 1 ? '' : 's') + ' evaluated &middot; top coaching focus: ' + agg.focus + '</div></div>' +
+      '<div class="stats">' +
+      '<div class="stat"><div class="big">' + fmtPct(agg.overall) + '</div><div class="lab">Avg overall</div></div>' +
+      '<div class="stat"><div class="big">' + fmtPct(agg.compliance) + '</div><div class="lab">Compliance</div></div>' +
+      '</div>';
+    panel.appendChild(head);
+
+    const grid = el('div', 'two-col');
+
+    const left = el('div');
+    left.appendChild(el('div', 'adviser-subhead', 'Section performance'));
+    SECTIONS.forEach(s => {
+      const row = el('div', 'mbar-row');
+      row.innerHTML =
+        '<span class="mbar-label">' + s.label + '</span>' +
+        '<span class="mbar-track"><span class="mbar-fill" style="width:' + agg[s.key] + '%;background:' + SECTION_COLOR[s.key] + '"></span></span>' +
+        '<span class="mbar-val">' + fmtPct(agg[s.key]) + '</span>';
+      left.appendChild(row);
+    });
+    grid.appendChild(left);
+
+    const right = el('div');
+    right.appendChild(el('div', 'adviser-subhead', 'Score trend'));
+    const tabs = el('div', 'metric-tabs');
+    METRICS.forEach(m => {
+      const btn = el('button', 'metric-tab' + (selectedMetric === m.key ? ' active' : ''), m.label);
+      btn.type = 'button';
+      if (selectedMetric === m.key) { btn.style.background = m.color; btn.style.borderColor = m.color; }
+      btn.addEventListener('click', () => { selectedMetric = m.key; openAdviserDetail(name); });
+      tabs.appendChild(btn);
+    });
+    right.appendChild(tabs);
+    const svg = svgEl('svg', { class: 'chart', viewBox: '0 0 480 220', preserveAspectRatio: 'xMidYMid meet' });
+    svg.setAttribute('style', 'width:100%;height:auto');
+    right.appendChild(svg);
+    const note = el('div', 'trend-note');
+    right.appendChild(note);
+    grid.appendChild(right);
+
+    panel.appendChild(grid);
+    panel.classList.add('open');
+
+    renderAdviserTrend(svg, note, advCalls, name);
+  }
+
+  function renderAdviserTrend(svg, note, advCalls, name) {
+    svg.innerHTML = '';
+    const metric = METRICS.find(m => m.key === selectedMetric);
+
+    // one point per call, in upload order
+    const uploadOrder = CALLS.map(c => c.interactionId);
+    const sorted = advCalls.slice().sort((a, b) => uploadOrder.indexOf(a.interactionId) - uploadOrder.indexOf(b.interactionId));
+    const n = sorted.length;
+
+    const W = 480, H = 220, ML = 36, MR = 16, MT = 16, MB = 30;
+    const plotW = W - ML - MR, plotH = H - MT - MB;
+    const xFor = i => n > 1 ? ML + (i / (n - 1)) * plotW : ML + plotW / 2;
+    const yFor = v => MT + plotH - (v / 100) * plotH;
+
+    [0, 25, 50, 75, 100].forEach(v => {
+      svg.appendChild(svgEl('line', { class: 'gridline', x1: ML, x2: W - MR, y1: yFor(v), y2: yFor(v) }));
+      const t = svgEl('text', { x: ML - 8, y: yFor(v) + 3, 'text-anchor': 'end', class: 'axis-label' });
+      t.textContent = v + '%';
+      svg.appendChild(t);
+    });
+
+    // x-axis: simple call sequence number
+    sorted.forEach((c, i) => {
+      const anchor = n === 1 ? 'middle' : (i === 0 ? 'start' : (i === n - 1 ? 'end' : 'middle'));
+      const t = svgEl('text', { x: xFor(i), y: H - 8, 'text-anchor': anchor, class: 'axis-label' });
+      t.textContent = String(i + 1);
+      svg.appendChild(t);
+    });
+
+    if (n > 1) {
+      const d = sorted.map((c, i) => (i === 0 ? 'M' : 'L') + xFor(i) + ',' + yFor(metric.getPct(c))).join(' ');
+      svg.appendChild(svgEl('path', { d: d, fill: 'none', stroke: metric.color, 'stroke-width': 2 }));
+    }
+    sorted.forEach((c, i) => {
+      const val = metric.getPct(c);
+      const dot = svgEl('circle', { cx: xFor(i), cy: yFor(val), r: 5, fill: metric.color, stroke: 'var(--surface)', 'stroke-width': 1.5, style: 'cursor:pointer' });
+      dot.addEventListener('mousemove', e => showTip(e, '<b>Call ' + (i + 1) + '</b><br>' + metric.label + ': ' + fmtPct(val) + '<br>' + c.callType + ' call<br><span style="opacity:.75">' + c.interactionId.slice(0, 8) + '&hellip;</span>'));
+      dot.addEventListener('mouseleave', hideTip);
+      svg.appendChild(dot);
+    });
+
+    note.textContent = n <= 1
+      ? 'Only one evaluated call so far for this view.'
+      : 'One point per evaluated call, in upload order. Hover a point for the call details.';
+  }
+
+  // ---------------- calls table + detail ----------------
+  let callsSort = { key: 'overallScore', dir: -1 };
+  let selectedCallId = null;
+
+  function renderCallsTable(calls) {
+    const rows = calls.slice().sort((a, b) => {
+      const k = callsSort.key;
+      let av = a[k], bv = b[k];
+      if (k === 'overallScore') { av = a.overallScore; bv = b.overallScore; }
+      if (av == null) av = '';
+      if (bv == null) bv = '';
+      if (typeof av === 'string' || typeof bv === 'string') return String(av).localeCompare(String(bv)) * callsSort.dir;
+      return (av - bv) * callsSort.dir;
+    });
+    const tbody = document.getElementById('callsTbody');
+    tbody.innerHTML = '';
+    if (!rows.length) {
+      tbody.appendChild(el('tr', '', '<td colspan="7" class="muted" style="padding:20px;text-align:center">No calls match the current filters.</td>'));
+    }
+    rows.forEach(c => {
+      const tr = el('tr');
+      if (c.interactionId === selectedCallId) tr.classList.add('selected');
+      tr.innerHTML =
+        '<td><span class="name-chip"><span class="dot" style="background:' + advisorColor[c.advisor] + '"></span>' + c.advisor + '</span></td>' +
+        '<td class="muted"><code>' + c.interactionId.slice(0, 8) + '&hellip;</code></td>' +
+        '<td>' + c.callType + '</td>' +
+        '<td class="num">' + (c.duration || '—') + '</td>' +
+        '<td class="num">' + fmtPct(c.overallScore) + '</td>' +
+        '<td>' + resultPill(c.result) + '</td>' +
+        '<td>' + c.primaryCoachingFocus + '</td>';
+      tr.addEventListener('click', () => { selectedCallId = c.interactionId; renderCallsTable(filteredCalls()); openDetail(c); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function resultPill(result) {
+    const cls = result === 'Pass' ? 'pass' : 'fail';
+    return '<span class="pill ' + cls + '">' + result + '</span>';
+  }
+
+  document.querySelectorAll('#callsTable th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.getAttribute('data-key');
+      if (callsSort.key === key) callsSort.dir *= -1; else { callsSort.key = key; callsSort.dir = -1; }
+      document.querySelectorAll('#callsTable th').forEach(t => t.classList.remove('sorted'));
+      th.classList.add('sorted');
+      th.setAttribute('data-arrow', callsSort.dir === -1 ? '↓' : '↑');
+      renderCallsTable(filteredCalls());
+    });
+  });
+
+  function openDetail(c) {
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = '';
+
+    const toolbar = el('div', 'detail-toolbar');
+    const closeBtn = el('button', 'close-btn', 'Close ✕');
+    closeBtn.addEventListener('click', () => { panel.classList.remove('open'); selectedCallId = null; renderCallsTable(filteredCalls()); });
+    toolbar.appendChild(closeBtn);
+    panel.appendChild(toolbar);
+
+    const head = el('div', 'detail-head');
+    const dupeLine = c.duplicateFiles && c.duplicateFiles.length
+      ? '<br><span class="muted">Duplicate export' + (c.duplicateFiles.length > 1 ? 's' : '') + ' also received: ' + c.duplicateFiles.join(', ') + '</span>'
+      : '';
+    const durationPart = c.duration ? (' &middot; ' + c.duration) : '';
+    head.innerHTML =
+      '<div><h3>' + c.advisor + '</h3><div class="meta">' + c.callType + ' call' + durationPart + ' &middot; <code>' + c.interactionId + '</code>' + dupeLine + '</div></div>' +
+      '<div class="detail-score"><div class="big">' + fmtPct(c.overallScore) + '</div>' + resultPill(c.result) + '</div>';
+    panel.appendChild(head);
+
+    if (c.requiredAction) {
+      const banner = el('div', 'autofail-banner');
+      banner.innerHTML = '<span>&#9888;</span><div><b>Auto-Fail — required action:</b> ' + c.requiredAction + '</div>';
+      panel.appendChild(banner);
+    }
+
+    if (c.previousEvaluation) {
+      const pe = c.previousEvaluation;
+      const prior = el('div', 'prior-eval');
+      prior.innerHTML = '<span>&#8635;</span><div><b>Re-evaluated call:</b> previously scored ' + fmtPct(pe.overallScore) + ' (' + pe.result + ', focus: ' + pe.primaryCoachingFocus + '). ' + (pe.note || '') + '</div>';
+      panel.appendChild(prior);
+    }
+
+    const secGrid = el('div', 'detail-grid');
+    SECTIONS.forEach(s => {
+      const box = el('div', 'detail-sec');
+      box.style.setProperty('--c', SECTION_COLOR[s.key]);
+      box.innerHTML =
+        '<div class="lab">' + s.label + '</div>' +
+        '<div class="pct">' + c.sections[s.key].avgLabel + '</div>' +
+        '<div class="w">' + fmtPct(c.sections[s.key].pct) + ' &middot; weighted ' + c.sections[s.key].weighted + '%</div>';
+      secGrid.appendChild(box);
+    });
+    panel.appendChild(secGrid);
+
+    const qaList = el('div', 'qa-list');
+    Object.keys(QUESTIONS).forEach(qk => {
+      const q = QUESTIONS[qk];
+      const a = c.questions[qk];
+      const item = el('div', 'qa-item');
+      const ratingClass = 'rating-' + clean(a.rating);
+      item.innerHTML =
+        '<div class="qhead"><span class="qtext">' + qk.toUpperCase() + '. ' + q.text + '</span><span class="rating-badge ' + ratingClass + '">' + a.rating + ' &middot; ' + a.score + '/5</span></div>' +
+        '<div class="qrationale">' + a.rationale + '</div>';
+      qaList.appendChild(item);
+    });
+    panel.appendChild(qaList);
+
+    const twoCol = el('div', 'two-col');
+
+    const left = el('div');
+    left.appendChild(el('h4', '', 'Compliance checklist'));
+    const compList = el('div', 'compliance-list');
+    c.compliance.checklist.forEach(item => {
+      const row = el('div', 'compliance-item');
+      row.innerHTML = '<span class="req">' + item.requirement + '</span><span class="ev">' + resultPill(item.status) + ' ' + item.evidence + '</span>';
+      compList.appendChild(row);
+    });
+    left.appendChild(compList);
+
+    if (c.strengths && c.strengths.length) {
+      const sh = el('h4', '', 'Strengths to reinforce');
+      sh.style.marginTop = '16px';
+      left.appendChild(sh);
+      const ul = el('ul');
+      c.strengths.forEach(s => ul.appendChild(el('li', '', s)));
+      left.appendChild(ul);
+    }
+
+    const right = el('div');
+    right.appendChild(el('h4', '', 'Primary coaching focus: ' + c.primaryCoachingFocus));
+    right.appendChild(el('div', 'qrationale', c.coachingRecommendation));
+    if (c.coachingExample) right.appendChild(el('blockquote', '', c.coachingExample));
+    if (c.coachingBenefits && c.coachingBenefits.length) {
+      const ul = el('ul');
+      c.coachingBenefits.forEach(b => ul.appendChild(el('li', '', b)));
+      right.appendChild(ul);
+    }
+    if (c.additionalCoachingOpportunity) {
+      const extra = c.additionalCoachingOpportunity;
+      const h = el('h4', '', 'Additional opportunity: ' + extra.focus);
+      h.style.marginTop = '16px';
+      right.appendChild(h);
+      right.appendChild(el('div', 'qrationale', extra.text));
+      if (extra.examples) {
+        const ul = el('ul');
+        extra.examples.forEach(x => ul.appendChild(el('li', '', x)));
+        right.appendChild(ul);
+      }
+      if (extra.benefit) right.appendChild(el('div', 'qrationale', extra.benefit));
+    }
+
+    twoCol.appendChild(left);
+    twoCol.appendChild(right);
+    panel.appendChild(twoCol);
+
+    panel.classList.add('open');
+  }
+
+  // ---------------- filter count ----------------
+  function renderFilterCount(calls) {
+    const c = document.getElementById('filterCount');
+    if (calls.length === CALLS.length) { c.textContent = CALLS.length + ' calls shown'; }
+    else { c.textContent = calls.length + ' of ' + CALLS.length + ' calls shown'; }
+  }
+
+  // ---------------- master render ----------------
+  function render() {
+    const calls = filteredCalls();
+    renderFilterCount(calls);
+    renderKpis(calls);
+    renderAdvisorTable(calls);
+    renderCallsTable(calls);
+    const panel = document.getElementById('detailPanel');
+    if (selectedCallId && !calls.find(c => c.interactionId === selectedCallId)) {
+      panel.classList.remove('open');
+      selectedCallId = null;
+    }
+    const adviserPanel = document.getElementById('adviserDetailPanel');
+    if (selectedAdvisor) {
+      if (calls.some(c => c.advisor === selectedAdvisor)) {
+        openAdviserDetail(selectedAdvisor);
+      } else {
+        adviserPanel.classList.remove('open');
+        selectedAdvisor = null;
+      }
+    }
+  }
+
+  document.addEventListener('mousemove', e => { if (tooltip.classList.contains('show')) moveTip(e); });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
