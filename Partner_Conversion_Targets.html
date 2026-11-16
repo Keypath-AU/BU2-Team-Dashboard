@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partner Conversion Targets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one control row above everything, summary tiles first, then the chart, then the detail table. */
+:root{
+  color-scheme: light;
+  --bg:#f3f2ee; --card:#fcfcfb; --ink:#14130f; --ink2:#52514e; --ink3:#6f6d67;
+  --line:#e0ded7; --grid:#ecebe6; --fcband:rgba(42,120,214,.06); --hover:#f1f0ec; --sel:#e8f0fb; --selink:#184f95;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --good:#0a7a0a; --bad:#d03b3b; --goodbg:#e4f3e4; --badbg:#fbe7e7; --flatbg:#ecebe6;
+  --font:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#121211; --card:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8d8c85;
+    --line:#2e2e2b; --grid:#262624; --fcband:rgba(57,135,229,.10); --hover:#232321; --sel:#1d2a3d; --selink:#9ec5f4;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#0ca30c; --s7:#9085e9; --s8:#e66767;
+    --good:#4cc24c; --bad:#e66767; --goodbg:#16301a; --badbg:#3a1b1b; --flatbg:#262624;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#121211; --card:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8d8c85;
+  --line:#2e2e2b; --grid:#262624; --fcband:rgba(57,135,229,.10); --hover:#232321; --sel:#1d2a3d; --selink:#9ec5f4;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#0ca30c; --s7:#9085e9; --s8:#e66767;
+  --good:#4cc24c; --bad:#e66767; --goodbg:#16301a; --badbg:#3a1b1b; --flatbg:#262624;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45}
+body{padding:20px 16px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink2);margin:4px 0 0;max-width:70ch}
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.ctl{display:flex;flex-direction:column;gap:5px}
+.ctl>label,.ctl>.lab{font-size:11px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:6px 9px;min-height:34px}
+select{min-width:230px}
+input[type=number]{width:84px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;color:var(--ink2);background:var(--card);border:0;padding:7px 12px;cursor:pointer;min-height:34px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--hover)}
+.seg button[aria-pressed="true"]{background:var(--sel);color:var(--selink);font-weight:600}
+button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.linkbtn{font:inherit;background:none;border:0;color:var(--selink);cursor:pointer;padding:0;text-decoration:underline;font-size:12px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tabs button{font:inherit;font-weight:500;color:var(--ink2);background:none;border:0;border-bottom:2px solid transparent;padding:9px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--s1)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile .k{font-size:11px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15}
+.tile .d{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.tile.hl{border-color:var(--s1);box-shadow:inset 3px 0 0 var(--s1)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card h2{font-size:15px;font-weight:600;margin:0 0 2px}
+.card .hint{color:var(--ink2);font-size:12.5px;margin:0 0 10px;max-width:80ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:6px 0 4px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart:focus-visible{outline:2px solid var(--s1);outline-offset:3px;border-radius:6px}
+.tt{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;box-shadow:0 4px 14px rgba(0,0,0,.14);font-size:12px;min-width:170px;max-width:290px;z-index:5;display:none}
+.tt .h{font-weight:600;margin-bottom:5px;color:var(--ink)}
+.tt .r{display:flex;align-items:center;gap:7px;padding:1.5px 0}
+.tt .r b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:50px}
+.tt .r span{color:var(--ink2)}
+.key{display:inline-block;width:14px;height:0;border-top:3px solid;flex:none}
+.key.dash{border-top-style:dashed;border-top-width:2px}
+.dia{display:inline-block;width:10px;height:10px;transform:rotate(45deg);flex:none}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.wide{min-width:900px}
+td:first-child{min-width:150px}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:10.5px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;background:var(--card)}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--hover)}
+tr.total td{font-weight:600;border-top:1px solid var(--ink3)}
+.scroll{overflow-x:auto}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px}
+.pill.up{background:var(--goodbg);color:var(--good)}
+.pill.down{background:var(--badbg);color:var(--bad)}
+.pill.flat{background:var(--flatbg);color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
+.chip{font:inherit;font-size:12.5px;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;padding:4px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--sel);color:var(--selink);border-color:var(--s1)}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--ink2);font-size:12.5px}
+.note{font-size:12px;color:var(--ink2);margin:8px 0 0;max-width:95ch}
+.call{border-left:3px solid var(--s1);padding:6px 12px;background:var(--sel);color:var(--ink);border-radius:0 8px 8px 0;margin:8px 0 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:820px){.two{grid-template-columns:1fr} select{min-width:0;width:100%} .ctl{flex:1 1 140px}}
+svg text{font-family:var(--font)}
+@media (prefers-reduced-motion:no-preference){.tile,.card{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Partner conversion targets</h1>
+    <p class="sub">Eligible-pool conversion from SB6 2025 to SB6 2026 by partner and program, with the SB1 2027 forecast from the four target methods. The forecast uses the eligible pool as at 16 November 2026, before census.</p>
+  </header>
+
+  <section class="controls" aria-label="Filters">
+    <div class="ctl"><label for="partner">Partner</label>
+      <select id="partner"></select></div>
+    <div class="ctl" id="basisCtl"><span class="lab">Count</span>
+      <div class="seg" role="group" aria-label="Count basis">
+        <button type="button" data-basis="e" aria-pressed="true">Enrolments</button>
+        <button type="button" data-basis="u" aria-pressed="false">Unique students</button>
+      </div></div>
+    <div class="ctl" id="segCtl"><span class="lab">Students</span>
+      <div class="seg" role="group" aria-label="Student segment">
+        <button type="button" data-seg="all" aria-pressed="true">All</button>
+        <button type="button" data-seg="rego" aria-pressed="false">Registration</button>
+        <button type="button" data-seg="reeng" aria-pressed="false">Re-engagement</button>
+      </div></div>
+    <div class="ctl" id="adjCtl"><label for="adj">Seasonal shade (pts)</label>
+      <div style="display:flex;gap:8px;align-items:center"><input type="number" id="adj" step="0.1" min="0" max="10"><button type="button" class="linkbtn" id="adjReset">Reset</button></div></div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" data-tab="overall" aria-selected="true">Overall rate</button>
+    <button role="tab" data-tab="programs" aria-selected="false">Program trends</button>
+    <button role="tab" data-tab="single" aria-selected="false">Single program</button>
+    <button role="tab" data-tab="season" aria-selected="false">Seasonality</button>
+  </nav>
+
+  <main id="view"></main>
+
+  <p class="note" id="footnote"></p>
+</div>
+
+<script>
+const D = {"periods":["SB6 2025","SB1 2026","SB2 2026","SB3 2026","SB4 2026","SB5 2026","SB6 2026"],"partners":{"UC":{"name":"University of Canberra (UC)","cells":[[1,"Counselling","reeng",285,132,132.0],[1,"Counselling","rego",473,390,390.0],[1,"Education","reeng",15,7,7.57],[1,"Education","rego",47,42,45.43],[1,"Juris Doctor","reeng",180,59,75.22],[1,"Juris Doctor","rego",416,323,411.78],[1,"Public Policy","reeng",43,16,16.52],[1,"Public Policy","rego",95,77,79.48],[1,"Social Work","reeng",57,24,29.18],[1,"Social Work","rego",128,115,139.82],[2,"Counselling","reeng",281,91,91.0],[2,"Counselling","rego",560,471,471.0],[2,"Education","reeng",21,10,10.27],[2,"Education","rego",74,63,64.73],[2,"Juris Doctor","reeng",214,51,64.87],[2,"Juris Doctor","rego",424,335,426.13],[2,"Public Policy","reeng",54,15,15.41],[2,"Public Policy","rego",113,96,98.59],[2,"Social Work","reeng",48,10,12.05],[2,"Social Work","rego",172,146,175.95],[3,"Counselling","reeng",270,82,82.0],[3,"Counselling","rego",595,474,474.0],[3,"Education","reeng",18,7,7.34],[3,"Education","rego",85,76,79.66],[3,"Juris Doctor","reeng",218,64,80.23],[3,"Juris Doctor","rego",423,350,438.77],[3,"Public Policy","reeng",41,12,12.33],[3,"Public Policy","rego",117,97,99.67],[3,"Social Work","reeng",53,16,17.19],[3,"Social Work","rego",192,172,184.81],[4,"Counselling","reeng",314,102,100.63],[4,"Counselling","rego",515,420,414.37],[4,"Education","reeng",22,10,10.22],[4,"Education","rego",93,82,83.78],[4,"Juris Doctor","reeng",231,57,70.96],[4,"Juris Doctor","rego",420,335,417.04],[4,"Public Policy","reeng",52,9,9.28],[4,"Public Policy","rego",101,86,88.72],[4,"Social Work","reeng",66,23,25.92],[4,"Social Work","rego",210,190,214.08],[5,"Business","rego",10,7,7.0],[5,"Counselling","reeng",239,83,82.83],[5,"Counselling","rego",515,413,412.17],[5,"Education","reeng",20,11,11.41],[5,"Education","rego",111,97,100.59],[5,"Juris Doctor","reeng",189,65,83.22],[5,"Juris Doctor","rego",398,331,423.78],[5,"Other","reeng",1,0,0.0],[5,"Public Policy","reeng",46,13,13.39],[5,"Public Policy","rego",106,87,89.61],[5,"Social Work","reeng",41,10,10.66],[5,"Social Work","rego",229,202,215.34],[0,"Counselling","reeng",304,103,103.43],[0,"Counselling","rego",474,378,379.57],[0,"Education","reeng",17,9,9.33],[0,"Education","rego",49,45,46.67],[0,"Juris Doctor","reeng",191,69,86.21],[0,"Juris Doctor","rego",397,328,409.79],[0,"Other","reeng",0,0,0.0],[0,"Public Policy","reeng",50,22,22.27],[0,"Public Policy","rego",73,58,58.72],[0,"Social Work","reeng",44,13,12.47],[0,"Social Work","rego",134,109,104.53],[6,"Business","reeng",3,2,2.0],[6,"Business","rego",16,12,12.0],[6,"Counselling","reeng",267,74,74.17],[6,"Counselling","rego",477,373,373.83],[6,"Education","reeng",28,14,14.37],[6,"Education","rego",154,137,140.63],[6,"Juris Doctor","reeng",163,51,65.27],[6,"Juris Doctor","rego",409,317,405.73],[6,"Other","reeng",1,0,0.0],[6,"Public Policy","reeng",50,9,9.45],[6,"Public Policy","rego",113,90,94.55],[6,"Social Work","reeng",52,11,11.85],[6,"Social Work","rego",241,195,210.15]],"programs":["Counselling","Juris Doctor","Social Work","Education","Public Policy"],"thin":["Business","Other"],"reported":[71.4,74.8,72.0,72.7,70.5,75.8,71.7],"fc":{"e":{"pool":1970,"A":1441.193437219059,"seg":{"rego":{"pool":1334,"B":1206.3344723642479,"D":1215.093981503928},"reeng":{"pool":636,"B":225.08663423188443,"D":226.18907109296447}},"prog":{"Business":{"pool":29,"C":21.0,"D":22.466433359781906,"seg":{"rego":{"pool":24,"D":20.668791232984578},"reeng":{"pool":5,"D":1.7976421267973266}}},"Counselling":{"pool":672,"C":432.11204884180285,"D":424.8363139014865,"seg":{"rego":{"pool":421,"D":339.89035188046626},"reeng":{"pool":251,"D":84.94596202102028}}},"Education":{"pool":205,"C":171.83023872679044,"D":176.1239531621966,"seg":{"rego":{"pool":173,"D":161.37727206184283},"reeng":{"pool":32,"D":14.746681100353777}}},"Juris Doctor":{"pool":591,"C":478.415399017084,"D":472.45923456013486,"seg":{"rego":{"pool":390,"D":396.0165885278397},"reeng":{"pool":201,"D":76.44264603229514}}},"Other":{"pool":4,"C":0.0,"D":0.0,"seg":{"rego":{"pool":4,"D":0.0}}},"Public Policy":{"pool":155,"C":104.11764705882354,"D":101.18700827670689,"seg":{"rego":{"pool":100,"D":84.64266617072585},"reeng":{"pool":55,"D":16.544342105981045}}},"Social Work":{"pool":314,"C":256.9262147570486,"D":244.21010933658562,"seg":{"rego":{"pool":222,"D":212.4983116300687},"reeng":{"pool":92,"D":31.711797706516904}}}},"B":1431.4211065961322,"C":1464.4015484015497,"D":1441.2830525968923,"roll":1444.5747862034082},"u":{"pool":1970,"A":1309.840425531915,"seg":{"rego":{"pool":1334,"B":1095.135495141391,"D":1104.6546900175442},"reeng":{"pool":636,"B":205.8763428025782,"D":206.3123142943128}},"prog":{"Business":{"pool":29,"C":21.0,"D":22.457816502969283,"seg":{"rego":{"pool":24,"D":20.649330250414547},"reeng":{"pool":5,"D":1.8084862525547365}}},"Counselling":{"pool":672,"C":432.71538875920277,"D":425.44348074969014,"seg":{"rego":{"pool":421,"D":340.35332661868574},"reeng":{"pool":251,"D":85.09015413100443}}},"Education":{"pool":205,"C":165.84880636604774,"D":170.00478452485856,"seg":{"rego":{"pool":173,"D":155.74589661894692},"reeng":{"pool":32,"D":14.258887905911648}}},"Juris Doctor":{"pool":591,"C":378.278726889773,"D":373.5846784011504,"seg":{"rego":{"pool":390,"D":313.1004870487942},"reeng":{"pool":201,"D":60.48419135235625}}},"Other":{"pool":4,"C":0.0,"D":0.0,"seg":{"rego":{"pool":4,"D":0.0}}},"Public Policy":{"pool":155,"C":101.02941176470588,"D":98.20087588390017,"seg":{"rego":{"pool":100,"D":82.08774817741481},"reeng":{"pool":55,"D":16.113127706485354}}},"Social Work":{"pool":314,"C":232.81583683263347,"D":221.27536824928828,"seg":{"rego":{"pool":222,"D":192.71790130328787},"reeng":{"pool":92,"D":28.5574669460004}}}},"B":1301.011837943969,"C":1331.688170612363,"D":1310.967004311857,"roll":1313.376859600026}},"adj":0.0,"seasonal":{"labels":["SB6 2022","SB1 2023","SB2 2023","SB3 2023","SB4 2023","SB5 2023","SB6 2023","SB1 2024","SB2 2024","SB3 2024","SB4 2024","SB5 2024","SB6 2024","SB1 2025","SB2 2025","SB3 2025","SB4 2025","SB5 2025","SB6 2025","SB1 2026","SB2 2026","SB3 2026","SB4 2026","SB5 2026","SB6 2026"],"total":[63.0,61.8,61.2,58.8,77.3,56.8,53.3,55.1,57.5,63.4,66.7,65.4,63.1,65.8,63.8,63.2,59.7,62.4,64.0,64.7,64.5,64.0,60.8,66.5,65.5],"elig":[68.7,65.8,67.2,63.3,85.2,62.1,58.1,60.2,61.8,67.2,71.1,70.3,67.3,72.1,69.4,68.9,66.9,70.2,71.4,74.8,72.0,72.7,70.5,75.8,71.7]}},"ECU":{"name":"Edith Cowan University (ECU)","cells":[[0,"Business Administration","reeng",20,11,11.0],[0,"Business Administration","rego",55,47,47.0],[0,"Business Psychology","reeng",33,16,16.0],[0,"Business Psychology","rego",77,59,59.0],[0,"Communications","reeng",6,6,6.43],[0,"Communications","rego",11,8,8.57],[0,"Counselling","reeng",75,44,43.26],[0,"Counselling","rego",234,195,191.74],[0,"Creative Writing","reeng",25,11,10.43],[0,"Creative Writing","rego",53,47,44.57],[0,"Cyber Security","reeng",6,5,5.0],[0,"Cyber Security","rego",18,13,13.0],[0,"Education","reeng",16,11,11.0],[0,"Education","rego",36,30,30.0],[0,"Human Resource Management","reeng",14,5,5.16],[0,"Human Resource Management","rego",42,26,26.84],[0,"Mental Health","reeng",1,1,0.94],[0,"Mental Health","rego",23,17,16.06],[0,"Project Management","reeng",17,9,9.0],[0,"Project Management","rego",39,36,36.0],[0,"Psychology","reeng",70,35,36.01],[0,"Psychology","rego",165,138,141.99],[0,"Psychology Adv","reeng",41,21,21.62],[0,"Psychology Adv","rego",162,147,151.37],[1,"Business Administration","reeng",23,11,11.0],[1,"Business Administration","rego",60,48,48.0],[1,"Business Psychology","reeng",40,16,16.0],[1,"Business Psychology","rego",80,57,57.0],[1,"Communications","reeng",1,0,0.0],[1,"Communications","rego",9,9,9.0],[1,"Counselling","reeng",91,48,47.58],[1,"Counselling","rego",223,183,181.42],[1,"Creative Writing","reeng",24,14,14.45],[1,"Creative Writing","rego",60,48,49.55],[1,"Cyber Security","reeng",5,3,3.0],[1,"Cyber Security","rego",12,11,11.0],[1,"Education","reeng",13,5,5.0],[1,"Education","rego",48,42,42.0],[1,"Human Resource Management","reeng",26,9,9.0],[1,"Human Resource Management","rego",26,21,21.0],[1,"Mental Health","reeng",6,1,1.0],[1,"Mental Health","rego",19,15,15.0],[1,"Project Management","reeng",17,6,6.51],[1,"Project Management","rego",34,29,31.49],[1,"Psychology","reeng",72,14,14.53],[1,"Psychology","rego",155,118,122.47],[1,"Psychology Adv","reeng",41,25,25.56],[1,"Psychology Adv","rego",169,153,156.44],[2,"Business Administration","reeng",25,10,10.0],[2,"Business Administration","rego",62,53,53.0],[2,"Business Psychology","reeng",57,21,21.0],[2,"Business Psychology","rego",81,66,66.0],[2,"Communications","reeng",3,2,2.0],[2,"Communications","rego",5,5,5.0],[2,"Counselling","reeng",102,36,36.28],[2,"Counselling","rego",252,220,221.72],[2,"Creative Writing","reeng",32,18,18.65],[2,"Creative Writing","rego",75,65,67.35],[2,"Cyber Security","reeng",7,5,5.0],[2,"Cyber Security","rego",13,11,11.0],[2,"Education","reeng",18,8,8.0],[2,"Education","rego",53,46,46.0],[2,"Human Resource Management","reeng",25,7,7.0],[2,"Human Resource Management","rego",37,29,29.0],[2,"Mental Health","reeng",5,2,2.0],[2,"Mental Health","rego",23,18,18.0],[2,"Project Management","reeng",20,7,7.0],[2,"Project Management","rego",40,34,34.0],[2,"Psychology","reeng",109,28,28.78],[2,"Psychology","rego",150,116,119.22],[2,"Psychology Adv","reeng",34,13,13.54],[2,"Psychology Adv","rego",227,202,210.46],[3,"Business Administration","reeng",23,6,6.0],[3,"Business Administration","rego",62,60,60.0],[3,"Business Psychology","reeng",61,20,20.18],[3,"Business Psychology","rego",109,90,90.82],[3,"Communications","reeng",5,4,4.0],[3,"Communications","rego",4,3,3.0],[3,"Counselling","reeng",107,36,36.47],[3,"Counselling","rego",249,196,198.53],[3,"Creative Writing","reeng",26,11,10.87],[3,"Creative Writing","rego",86,73,72.13],[3,"Cyber Security","reeng",4,2,2.15],[3,"Cyber Security","rego",12,11,11.85],[3,"Education","reeng",24,11,11.42],[3,"Education","rego",53,41,42.58],[3,"Human Resource Management","reeng",34,14,13.36],[3,"Human Resource Management","rego",37,30,28.64],[3,"Mental Health","reeng",12,5,5.0],[3,"Mental Health","rego",19,16,16.0],[3,"Project Management","reeng",15,6,6.0],[3,"Project Management","rego",43,39,39.0],[3,"Psychology","reeng",116,33,33.6],[3,"Psychology","rego",155,133,135.4],[3,"Psychology Adv","reeng",46,18,19.0],[3,"Psychology Adv","rego",257,234,247.0],[4,"Business Administration","reeng",31,13,13.0],[4,"Business Administration","rego",67,61,61.0],[4,"Business Psychology","reeng",64,24,24.0],[4,"Business Psychology","rego",96,79,79.0],[4,"Communications","reeng",2,1,1.0],[4,"Communications","rego",4,2,2.0],[4,"Counselling","reeng",107,33,32.49],[4,"Counselling","rego",202,161,158.51],[4,"Creative Writing","reeng",27,6,5.91],[4,"Creative Writing","rego",79,63,62.09],[4,"Cyber Security","reeng",3,2,2.0],[4,"Cyber Security","rego",5,5,5.0],[4,"Education","reeng",25,10,9.76],[4,"Education","rego",43,32,31.24],[4,"Human Resource Management","reeng",28,4,4.0],[4,"Human Resource Management","rego",32,29,29.0],[4,"Mental Health","reeng",11,5,5.0],[4,"Mental Health","rego",15,13,13.0],[4,"Project Management","reeng",19,8,7.54],[4,"Project Management","rego",35,27,25.46],[4,"Psychology","reeng",98,19,19.26],[4,"Psychology","rego",146,125,126.74],[4,"Psychology Adv","reeng",75,35,37.82],[4,"Psychology Adv","rego",223,201,217.18],[5,"Business Administration","reeng",27,17,17.0],[5,"Business Administration","rego",72,66,66.0],[5,"Business Psychology","reeng",46,23,23.0],[5,"Business Psychology","rego",93,64,64.0],[5,"Communications","reeng",2,2,2.0],[5,"Communications","rego",3,3,3.0],[5,"Counselling","reeng",128,74,74.31],[5,"Counselling","rego",188,164,164.69],[5,"Creative Writing","reeng",34,17,16.75],[5,"Creative Writing","rego",59,50,49.25],[5,"Cyber Security","reeng",7,3,3.0],[5,"Cyber Security","rego",5,4,4.0],[5,"Education","reeng",24,10,9.77],[5,"Education","rego",46,33,32.23],[5,"Human Resource Management","reeng",14,4,4.0],[5,"Human Resource Management","rego",33,30,30.0],[5,"Mental Health","reeng",9,7,7.0],[5,"Mental Health","rego",20,16,16.0],[5,"Project Management","reeng",13,8,7.76],[5,"Project Management","rego",35,26,25.24],[5,"Psychology","reeng",63,26,25.62],[5,"Psychology","rego",141,110,108.38],[5,"Psychology Adv","reeng",50,32,33.08],[5,"Psychology Adv","rego",232,204,210.92],[6,"Business Administration","reeng",8,3,3.09],[6,"Business Administration","rego",75,61,62.91],[6,"Business Psychology","reeng",52,29,28.31],[6,"Business Psychology","rego",72,55,53.69],[6,"Communications","rego",1,1,1.0],[6,"Counselling","reeng",71,35,34.84],[6,"Counselling","rego",213,185,184.16],[6,"Creative Writing","reeng",28,9,9.83],[6,"Creative Writing","rego",68,56,61.17],[6,"Cyber Security","reeng",4,4,4.5],[6,"Cyber Security","rego",4,4,4.5],[6,"Education","reeng",19,9,9.0],[6,"Education","rego",53,43,43.0],[6,"Human Resource Management","reeng",16,9,9.0],[6,"Human Resource Management","rego",29,27,27.0],[6,"Mental Health","reeng",7,5,5.0],[6,"Mental Health","rego",25,21,21.0],[6,"Project Management","reeng",12,5,5.0],[6,"Project Management","rego",37,32,32.0],[6,"Psychology","reeng",63,27,27.0],[6,"Psychology","rego",134,115,115.0],[6,"Psychology Adv","reeng",43,27,27.74],[6,"Psychology Adv","rego",254,229,235.26]],"programs":["Psychology Adv","Counselling","Psychology","Business Psychology","Business Administration","Creative Writing","Education","Human Resource Management","Project Management","Mental Health"],"thin":["Communications","Cyber Security"],"reported":[73.4,73.8,71.0,70.4,67.8,73.2,75.7],"fc":{"e":{"pool":1262,"A":918.0338345864661,"seg":{"rego":{"pool":930,"B":793.3563508082653,"D":796.7375553726242},"reeng":{"pool":332,"B":141.73909206375902,"D":141.68626855367876}},"prog":{"Business Administration":{"pool":86,"C":66.12131147540984,"D":65.14277608885074,"seg":{"rego":{"pool":61,"D":53.83767233983595},"reeng":{"pool":25,"D":11.305103749014787}}},"Business Psychology":{"pool":136,"C":87.4588969823101,"D":87.82230035258208,"seg":{"rego":{"pool":89,"D":68.50014569251218},"reeng":{"pool":47,"D":19.322154660069895}}},"Communications":{"pool":2,"C":1.6785714285714286,"D":1.492433818210198,"seg":{"rego":{"pool":1,"D":0.9488632077064665},"reeng":{"pool":1,"D":0.5435706105037316}}},"Counselling":{"pool":285,"C":204.15254237288136,"D":202.20046064154366,"seg":{"rego":{"pool":194,"D":161.73677435735314},"reeng":{"pool":91,"D":40.46368628419052}}},"Creative Writing":{"pool":78,"C":56.88461538461539,"D":55.059772691918674,"seg":{"rego":{"pool":51,"D":43.229646559247584},"reeng":{"pool":27,"D":11.830126132671088}}},"Cyber Security":{"pool":3,"C":2.428571428571429,"D":2.7564286406370755,"seg":{"rego":{"pool":3,"D":2.7564286406370755}}},"Education":{"pool":74,"C":52.00424628450106,"D":52.485546393795595,"seg":{"rego":{"pool":54,"D":43.68251001291329},"reeng":{"pool":20,"D":8.803036380882304}}},"Human Resource Management":{"pool":42,"C":25.969465648854964,"D":29.00230497967861,"seg":{"rego":{"pool":33,"D":25.927135577577896},"reeng":{"pool":9,"D":3.075169402100712}}},"Mental Health":{"pool":33,"C":23.861538461538462,"D":25.19793707945096,"seg":{"rego":{"pool":28,"D":22.933676540843848},"reeng":{"pool":5,"D":2.2642605386071093}}},"Project Management":{"pool":40,"C":28.93617021276596,"D":28.480867100083515,"seg":{"rego":{"pool":27,"D":22.909953104109903},"reeng":{"pool":13,"D":5.570913995973612}}},"Psychology":{"pool":193,"C":124.26511912034209,"D":131.47721202344664,"seg":{"rego":{"pool":138,"D":113.76062833454777},"reeng":{"pool":55,"D":17.716583688898854}}},"Psychology Adv":{"pool":290,"C":251.3646170442287,"D":257.30578411610526,"seg":{"rego":{"pool":251,"D":236.51412100533912},"reeng":{"pool":39,"D":20.791663110766148}}}},"B":935.0954428720244,"C":925.1256658445908,"D":938.4238239263029,"roll":929.169691807346},"u":{"pool":1262,"A":906.7000835421887,"seg":{"rego":{"pool":930,"B":782.9187027987562,"D":785.0402209834581},"reeng":{"pool":332,"B":140.53843428976268,"D":140.73635334812045}},"prog":{"Business Administration":{"pool":86,"C":65.83934426229509,"D":64.8712714209041,"seg":{"rego":{"pool":61,"D":53.57685831823692},"reeng":{"pool":25,"D":11.294413102667175}}},"Business Psychology":{"pool":136,"C":87.60041623309054,"D":87.96610950582146,"seg":{"rego":{"pool":89,"D":68.56945672824637},"reeng":{"pool":47,"D":19.396652777575092}}},"Communications":{"pool":2,"C":1.6428571428571428,"D":1.4615813945000982,"seg":{"rego":{"pool":1,"D":0.9288296659264058},"reeng":{"pool":1,"D":0.5327517285736924}}},"Counselling":{"pool":285,"C":204.66101694915255,"D":202.7152646141635,"seg":{"rego":{"pool":194,"D":162.13112924555736},"reeng":{"pool":91,"D":40.58413536860612}}},"Creative Writing":{"pool":78,"C":56.30769230769231,"D":54.51037227309065,"seg":{"rego":{"pool":51,"D":42.786079816819885},"reeng":{"pool":27,"D":11.72429245627077}}},"Cyber Security":{"pool":3,"C":2.3714285714285714,"D":2.691530153074178,"seg":{"rego":{"pool":3,"D":2.691530153074178}}},"Education":{"pool":74,"C":52.00424628450106,"D":52.48866585813131,"seg":{"rego":{"pool":54,"D":43.66810772756176},"reeng":{"pool":20,"D":8.820558130569554}}},"Human Resource Management":{"pool":42,"C":26.076335877862597,"D":29.104170374261567,"seg":{"rego":{"pool":33,"D":26.002128441789026},"reeng":{"pool":9,"D":3.102041932472543}}},"Mental Health":{"pool":33,"C":24.03076923076923,"D":25.38464117581567,"seg":{"rego":{"pool":28,"D":23.103023392739846},"reeng":{"pool":5,"D":2.281617783075824}}},"Project Management":{"pool":40,"C":28.93617021276596,"D":28.48347599350928,"seg":{"rego":{"pool":27,"D":22.891523177491536},"reeng":{"pool":13,"D":5.591952816017746}}},"Psychology":{"pool":193,"C":122.26084300549786,"D":129.35340634075777,"seg":{"rego":{"pool":138,"D":111.89639536835662},"reeng":{"pool":55,"D":17.457010972401154}}},"Psychology Adv":{"pool":290,"C":241.04099244875943,"D":246.746085227549,"seg":{"rego":{"pool":251,"D":226.79515894765825},"reeng":{"pool":39,"D":19.950926279890755}}}},"B":923.4571370885188,"C":912.7721125266723,"D":925.7765743315786,"roll":917.1764768722396}},"adj":0.7,"seasonal":{"labels":["SB6 2019","SB1 2020","SB2 2020","SB3 2020","SB4 2020","SB5 2020","SB6 2020","SB1 2021","SB2 2021","SB3 2021","SB4 2021","SB5 2021","SB6 2021","SB1 2022","SB2 2022","SB3 2022","SB4 2022","SB5 2022","SB6 2022","SB1 2023","SB2 2023","SB3 2023","SB4 2023","SB5 2023","SB6 2023","SB1 2024","SB2 2024","SB3 2024","SB4 2024","SB5 2024","SB6 2024","SB1 2025","SB2 2025","SB3 2025","SB4 2025","SB5 2025","SB6 2025","SB1 2026","SB2 2026","SB3 2026","SB4 2026","SB5 2026","SB6 2026"],"total":[59.9,61.7,55.5,53.1,58.0,59.2,66.5,63.3,60.7,63.4,59.5,62.1,63.3,59.3,58.8,65.3,63.0,60.5,56.2,55.5,55.3,55.1,54.5,53.0,55.5,52.9,58.2,60.8,57.0,52.6,56.5,54.6,63.8,63.2,61.3,60.2,60.3,57.5,59.6,58.3,51.1,58.8,62.7],"elig":[66.0,70.1,61.3,60.4,71.2,64.6,74.1,67.6,65.9,69.3,68.1,68.0,70.1,66.8,65.9,72.8,71.3,70.8,64.3,63.6,63.8,64.1,64.5,62.7,63.2,62.7,66.1,69.2,65.9,62.3,66.2,64.3,73.1,73.8,71.9,72.7,73.4,73.8,71.0,70.4,67.8,73.2,75.7]}},"VU":{"name":"Victoria University (VU)","cells":[[0,"Business","reeng",58,22,21.65],[0,"Business","rego",119,103,101.35],[0,"Financial Planning","reeng",22,10,10.28],[0,"Financial Planning","rego",31,26,26.72],[0,"Mental Health","reeng",43,14,13.54],[0,"Mental Health","rego",85,77,74.46],[0,"Mental Health Child & Adolescent","reeng",74,24,24.0],[0,"Mental Health Child & Adolescent","rego",171,151,151.0],[0,"Mental Health Nursing","reeng",32,14,13.63],[0,"Mental Health Nursing","rego",107,101,98.37],[0,"NDS","reeng",2,0,0.0],[0,"NDS","rego",2,2,2.0],[0,"Nursing","reeng",38,11,11.0],[0,"Nursing","rego",115,102,102.0],[0,"Public Health","reeng",23,12,11.8],[0,"Public Health","rego",60,47,46.2],[0,"Teaching","reeng",54,24,24.41],[0,"Teaching","rego",160,151,153.59],[1,"Business","reeng",63,19,19.34],[1,"Business","rego",110,92,93.66],[1,"Financial Planning","reeng",13,2,1.94],[1,"Financial Planning","rego",36,32,31.06],[1,"Mental Health","reeng",47,16,15.46],[1,"Mental Health","rego",92,73,70.54],[1,"Mental Health Child & Adolescent","reeng",75,18,18.23],[1,"Mental Health Child & Adolescent","rego",165,139,140.77],[1,"Mental Health Nursing","reeng",35,14,14.0],[1,"Mental Health Nursing","rego",112,94,94.0],[1,"NDS","reeng",1,0,0.0],[1,"NDS","rego",1,1,1.0],[1,"Nursing","reeng",56,20,19.18],[1,"Nursing","rego",116,102,97.82],[1,"Public Health","reeng",22,5,5.09],[1,"Public Health","rego",60,49,49.91],[1,"Teaching","reeng",43,10,10.77],[1,"Teaching","rego",154,132,142.23],[2,"Business","reeng",58,17,17.74],[2,"Business","rego",107,98,102.26],[2,"Financial Planning","reeng",15,3,3.0],[2,"Financial Planning","rego",44,37,37.0],[2,"Mental Health","reeng",50,20,19.79],[2,"Mental Health","rego",89,77,76.21],[2,"Mental Health Child & Adolescent","reeng",81,27,26.84],[2,"Mental Health Child & Adolescent","rego",171,147,146.16],[2,"Mental Health Nursing","reeng",39,21,21.0],[2,"Mental Health Nursing","rego",113,102,102.0],[2,"NDS","reeng",1,0,0.0],[2,"NDS","rego",2,0,0.0],[2,"Nursing","reeng",48,23,22.31],[2,"Nursing","rego",122,111,107.69],[2,"Public Health","reeng",26,13,13.19],[2,"Public Health","rego",61,57,57.81],[2,"Teaching","reeng",64,32,33.81],[2,"Teaching","rego",138,127,134.19],[3,"Business","reeng",53,19,19.89],[3,"Business","rego",124,109,114.11],[3,"Financial Planning","reeng",16,7,6.84],[3,"Financial Planning","rego",39,36,35.16],[3,"Mental Health","reeng",49,15,14.85],[3,"Mental Health","rego",91,83,82.15],[3,"Mental Health Child & Adolescent","reeng",71,30,30.31],[3,"Mental Health Child & Adolescent","rego",178,164,165.69],[3,"Mental Health Nursing","reeng",33,12,11.68],[3,"Mental Health Nursing","rego",108,101,98.32],[3,"NDS","reeng",0,0,0.0],[3,"Nursing","reeng",42,14,13.89],[3,"Nursing","rego",124,115,114.11],[3,"Public Health","reeng",18,6,6.0],[3,"Public Health","rego",75,69,69.0],[3,"Teaching","reeng",50,25,25.88],[3,"Teaching","rego",183,174,180.12],[4,"Business","reeng",56,14,14.43],[4,"Business","rego",126,117,120.57],[4,"Financial Planning","reeng",15,4,4.36],[4,"Financial Planning","rego",35,29,31.64],[4,"Mental Health","reeng",40,14,13.68],[4,"Mental Health","rego",91,74,72.32],[4,"Mental Health Child & Adolescent","reeng",70,28,28.15],[4,"Mental Health Child & Adolescent","rego",179,155,155.85],[4,"Mental Health Nursing","reeng",26,13,12.87],[4,"Mental Health Nursing","rego",96,84,83.13],[4,"NDS","rego",2,0,0.0],[4,"Nursing","reeng",38,11,11.0],[4,"Nursing","rego",124,117,117.0],[4,"Public Health","reeng",26,15,15.0],[4,"Public Health","rego",76,70,70.0],[4,"Teaching","reeng",41,15,15.37],[4,"Teaching","rego",213,190,194.63],[5,"Business","reeng",48,20,20.7],[5,"Business","rego",113,94,97.3],[5,"Financial Planning","reeng",17,5,5.0],[5,"Financial Planning","rego",31,30,30.0],[5,"Mental Health","reeng",44,24,24.29],[5,"Mental Health","rego",62,59,59.71],[5,"Mental Health Child & Adolescent","reeng",70,26,26.0],[5,"Mental Health Child & Adolescent","rego",130,119,119.0],[5,"Mental Health Nursing","reeng",34,23,23.23],[5,"Mental Health Nursing","rego",84,78,78.77],[5,"Nursing","reeng",39,21,21.38],[5,"Nursing","rego",101,90,91.62],[5,"Public Health","reeng",21,12,12.17],[5,"Public Health","rego",62,57,57.83],[5,"Teaching","reeng",61,30,32.21],[5,"Teaching","rego",196,174,186.79],[6,"Business","reeng",46,27,25.58],[6,"Business","rego",95,87,82.42],[6,"Financial Planning","reeng",13,4,3.89],[6,"Financial Planning","rego",34,33,32.11],[6,"Mental Health","reeng",25,12,11.46],[6,"Mental Health","rego",60,55,52.54],[6,"Mental Health Child & Adolescent","reeng",57,28,24.14],[6,"Mental Health Child & Adolescent","rego",125,110,94.86],[6,"Mental Health Nursing","reeng",30,18,18.19],[6,"Mental Health Nursing","rego",85,79,79.81],[6,"NDS","rego",1,0,0.0],[6,"Nursing","reeng",40,21,22.46],[6,"Nursing","rego",95,80,85.54],[6,"Public Health","reeng",15,9,9.16],[6,"Public Health","rego",53,48,48.84],[6,"Teaching","reeng",49,28,28.13],[6,"Teaching","rego",200,185,185.87]],"programs":["Teaching","Mental Health Child & Adolescent","Nursing","Business","Mental Health Nursing","Mental Health","Public Health","Financial Planning"],"thin":["NDS"],"reported":[73.9,69.7,72.3,79.7,75.2,81.0,77.8],"fc":{"e":{"pool":992,"A":752.2166868198307,"seg":{"rego":{"pool":756,"B":678.6423577805155,"D":681.0888515239836},"reeng":{"pool":236,"B":95.3896741295545,"D":95.42061742728599}},"prog":{"Business":{"pool":127,"C":91.90221088435374,"D":92.87965582691481,"seg":{"rego":{"pool":88,"D":78.48517621722232},"reeng":{"pool":39,"D":14.394479609692496}}},"Financial Planning":{"pool":42,"C":30.13296398891967,"D":30.63652020923669,"seg":{"rego":{"pool":30,"D":26.453321600378594},"reeng":{"pool":12,"D":4.183198608858095}}},"Mental Health":{"pool":100,"C":69.23963133640552,"D":73.68878097653639,"seg":{"rego":{"pool":76,"D":64.6447068213382},"reeng":{"pool":24,"D":9.044074155198189}}},"Mental Health Child & Adolescent":{"pool":171,"C":121.71985157699443,"D":121.48535843908458,"seg":{"rego":{"pool":118,"D":102.37490436119761},"reeng":{"pool":53,"D":19.11045407788697}}},"Mental Health Nursing":{"pool":119,"C":95.42933618843682,"D":96.69327283824859,"seg":{"rego":{"pool":93,"D":84.25901192059902},"reeng":{"pool":26,"D":12.434260917649564}}},"Nursing":{"pool":140,"C":106.72131147540983,"D":110.95210015898493,"seg":{"rego":{"pool":110,"D":98.84345132491005},"reeng":{"pool":30,"D":12.10864883407488}}},"Public Health":{"pool":69,"C":54.46153846153847,"D":58.185169427771946,"seg":{"rego":{"pool":60,"D":54.08033469718187},"reeng":{"pool":9,"D":4.104834730590077}}},"Teaching":{"pool":224,"C":188.01494396014945,"D":191.98861107449167,"seg":{"rego":{"pool":181,"D":171.94794458115595},"reeng":{"pool":43,"D":20.04066649333572}}}},"B":774.0320319100699,"C":757.621787872208,"D":776.5094689512697,"roll":765.0949938883446},"u":{"pool":992,"A":748.0183796856106,"seg":{"rego":{"pool":756,"B":674.5904954499495,"D":676.1874911336977},"reeng":{"pool":236,"B":95.0667808219178,"D":95.03602293959601}},"prog":{"Business":{"pool":127,"C":90.49829931972789,"D":91.45033071420035,"seg":{"rego":{"pool":88,"D":77.20421563181107},"reeng":{"pool":39,"D":14.246115082389283}}},"Financial Planning":{"pool":42,"C":30.016620498614955,"D":30.525236095817505,"seg":{"rego":{"pool":30,"D":26.363376519174533},"reeng":{"pool":12,"D":4.161859576642973}}},"Mental Health":{"pool":100,"C":70.6221198156682,"D":75.17900549982959,"seg":{"rego":{"pool":76,"D":65.96931271942331},"reeng":{"pool":24,"D":9.209692780406275}}},"Mental Health Child & Adolescent":{"pool":171,"C":123.3061224489796,"D":123.06466503185086,"seg":{"rego":{"pool":118,"D":103.60873411845598},"reeng":{"pool":53,"D":19.45593091339488}}},"Mental Health Nursing":{"pool":119,"C":96.06638115631692,"D":97.35510055686822,"seg":{"rego":{"pool":93,"D":84.85880931431795},"reeng":{"pool":26,"D":12.496291242550267}}},"Nursing":{"pool":140,"C":106.8488160291439,"D":111.10444396784214,"seg":{"rego":{"pool":110,"D":99.00182971675821},"reeng":{"pool":30,"D":12.102614251083939}}},"Public Health":{"pool":69,"C":54.11538461538462,"D":57.81072308639636,"seg":{"rego":{"pool":60,"D":53.72674989217686},"reeng":{"pool":9,"D":4.083973194219493}}},"Teaching":{"pool":224,"C":180.9016189290162,"D":184.73400912048857,"seg":{"rego":{"pool":181,"D":165.4544632215797},"reeng":{"pool":43,"D":19.27954589890889}}}},"B":769.6572762718672,"C":752.3753628128524,"D":771.2235140732937,"roll":760.318633210906}},"adj":2.5,"seasonal":{"labels":["SB6 2019","SB1 2020","SB2 2020","SB3 2020","SB4 2020","SB5 2020","SB6 2020","SB1 2021","SB2 2021","SB3 2021","SB4 2021","SB5 2021","SB6 2021","SB1 2022","SB2 2022","SB3 2022","SB4 2022","SB5 2022","SB6 2022","SB1 2023","SB2 2023","SB3 2023","SB4 2023","SB5 2023","SB6 2023","SB1 2024","SB2 2024","SB3 2024","SB4 2024","SB5 2024","SB6 2024","SB1 2025","SB2 2025","SB3 2025","SB4 2025","SB5 2025","SB6 2025","SB1 2026","SB2 2026","SB3 2026","SB4 2026","SB5 2026","SB6 2026"],"total":[54.5,57.4,60.9,66.2,65.9,65.5,63.3,61.2,63.3,62.6,63.6,69.4,64.4,54.3,61.5,57.1,61.0,57.4,53.9,51.1,54.4,57.6,56.2,59.9,56.7,54.3,56.5,55.7,61.0,57.3,56.7,51.3,55.2,59.1,54.5,58.2,58.3,52.6,58.1,61.4,59.1,60.6,58.8],"elig":[61.1,66.9,65.7,73.3,69.1,73.4,72.9,70.7,71.1,70.4,72.9,78.3,75.4,63.1,72.1,64.7,66.7,64.3,62.7,61.5,63.5,67.2,64.5,71.2,66.5,63.8,65.8,64.8,70.8,68.4,72.1,68.7,67.6,72.7,72.7,76.6,73.9,69.7,72.3,79.7,75.2,81.0,77.8]}}}};
+const PER = D.periods;                       // 7 history periods
+const FCL = 'SB1 2027';
+const LABELS = PER.concat([FCL]);
+const SEGN = {all:'All students', rego:'Registration', reeng:'Re-engagement'};
+const CALL = {
+  UC:'No seasonal shade. SB6 to SB1 rose in three of four years, but UC’s SB6 is a low point and rates have trended up, so SB1 sits within about half a point of its year average once SB4 2023 is set aside. Upside case: SB1 2026 alone would give about 1,527.',
+  ECU:'Shade down about 0.7 pts (about 9 enrolments). SB6 is ECU’s high point and SB1 usually dips from it; SB6 2026 was the highest eligible-pool rate on record. Stretch figure stays at about 948.',
+  VU:'Shade down about 2.5 pts (about 25 enrolments). SB1 is VU’s weakest period nearly every year, about 3 points below its year average. Range 701 (SB1 2026 alone) to 765 (no shade).'
+};
+const ST = {partner:'VU', basis:'e', seg:'all', tab:'overall', adj:{}, sel:[], prog:null, sMetric:'elig', sortBy:'trend', showRep:false};
+Object.keys(D.partners).forEach(k=>ST.adj[k]=D.partners[k].adj);
+
+const $ = s=>document.querySelector(s);
+const fmt = n=>Math.round(n).toLocaleString('en-AU');
+const pc = (x,d=1)=>x==null||!isFinite(x)?'–':x.toFixed(d)+'%';
+const sg = (x,d=1)=>(x>=0?'+':'−')+Math.abs(x).toFixed(d);
+const unitWord = ()=>ST.basis==='e'?'enrolments':'students';
+const NS='http://www.w3.org/2000/svg';
+function S(tag,attrs,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;return e}
+function H(tag,attrs,html){const e=document.createElement(tag);for(const k in (attrs||{}))e.setAttribute(k,attrs[k]);if(html!=null)e.textContent=html;return e}
+
+/* ---------- data helpers ---------- */
+const P = ()=>D.partners[ST.partner];
+function series(prog,seg){
+  const el=Array(7).fill(0), nu=Array(7).fill(0);
+  for(const c of P().cells){
+    if(prog && c[1]!==prog) continue;
+    if(seg!=='all' && c[2]!==seg) continue;
+    el[c[0]]+=c[3]; nu[c[0]]+= ST.basis==='e'?c[5]:c[4];
+  }
+  return {el,nu,rate:el.map((x,i)=>x>0?nu[i]/x*100:null)};
+}
+function forecast(prog,seg){
+  const f=P().fc[ST.basis]; let pool, pts, rec, recName;
+  if(!prog){
+    if(seg==='all'){pool=f.pool;pts=[['A','Overall rate',f.A],['B','Registration vs re-engagement',f.B],['C','Program rates',f.C],['D','Program × segment',f.D]];rec=f.roll;recName='Roll-up of the four methods';}
+    else{const s=f.seg[seg];pool=s.pool;pts=[['B','Segment rate',s.B],['D','Program × segment',s.D]];rec=(s.B+s.D)/2;recName='Average of the two methods';}
+  }else{
+    const q=f.prog[prog]; if(!q) return null;
+    if(seg==='all'){pool=q.pool;pts=[['C','Program rate',q.C],['D','Program × segment',q.D]];rec=(q.C+q.D)/2;recName='Average of the two methods';}
+    else{const s=q.seg[seg]; if(!s) return null; pool=s.pool;pts=[['D','Program × segment',s.D]];rec=s.D;recName='Program × segment method';}
+  }
+  if(!pool) return null;
+  const adj=ST.adj[ST.partner]||0;
+  const recRate=rec/pool*100, adjRate=Math.max(0,recRate-adj);
+  return {pool,pts:pts.map(p=>({k:p[0],name:p[1],n:p[2],r:p[2]/pool*100})),rec,recRate,recName,adjRate,adjN:adjRate/100*pool};
+}
+function slope(r,el){
+  const xs=[],ys=[]; r.forEach((v,i)=>{if(v!=null&&el[i]>=15){xs.push(i);ys.push(v)}});
+  if(xs.length<4) return null;
+  const n=xs.length, mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+  let nu=0,de=0; xs.forEach((x,i)=>{nu+=(x-mx)*(ys[i]-my);de+=(x-mx)*(x-mx)}); return nu/de;
+}
+const dir = s=> s==null?'flat':(s>0.5?'up':(s<-0.5?'down':'flat'));
+function pill(s){
+  const d=dir(s); const sp=H('span',{class:'pill '+d});
+  sp.textContent = d==='up'?'▲ Up':d==='down'?'▼ Down':(s==null?'Too few periods':'● Steady'); return sp;
+}
+
+/* ---------- chart: lines + forecast column ---------- */
+function lineChart(host,o){
+  host.innerHTML=''; host.setAttribute('tabindex','0');
+  const W=Math.max(320,host.clientWidth||700), Ht=o.height||330;
+  const n=o.labels.length; const ml=Math.max(0,...(o.markers||[]).map(k=>k.label?k.label.length:0)); const m={l:46,r:Math.min(200,ml?30+ml*6.6:30),t:24,b:o.xTilt?46:38};
+  const pw=W-m.l-m.r, ph=Ht-m.t-m.b, step=pw/(n-1);
+  const X=i=>m.l+i*step;
+  const vals=[]; o.series.forEach(s=>s.vals.forEach(v=>v!=null&&vals.push(v))); (o.markers||[]).forEach(k=>vals.push(k.y));
+  if(o.range) vals.push(o.range[0],o.range[1]);
+  let lo=Math.min(...vals), hi=Math.max(...vals); const vmax=hi; const pad=Math.max(1.2,(hi-lo)*.14); lo-=pad; hi+=pad;
+  const span=hi-lo, ts=span>40?10:span>18?5:span>8?2:1; lo=Math.floor(lo/ts)*ts; hi=Math.ceil(hi/ts)*ts;
+  if(hi>100&&vmax<=100) hi=100; if(lo<0) lo=0;
+  const Y=v=>m.t+ph-(v-lo)/(hi-lo)*ph;
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Ht}`,role:'img','aria-label':o.title||'Line chart'});
+  for(let v=lo;v<=hi+1e-9;v+=ts){
+    svg.appendChild(S('line',{x1:m.l,x2:m.l+pw+step/2,y1:Y(v),y2:Y(v),style:'stroke:var(--grid);stroke-width:1'}));
+    svg.appendChild(S('text',{x:m.l-8,y:Y(v)+4,'text-anchor':'end',style:'fill:var(--ink3);font-size:11px'},v+'%'));
+  }
+  if(o.fcIndex!=null){
+    const dx=X(o.fcIndex-1)+step/2;
+    svg.appendChild(S('rect',{x:dx,y:m.t-6,width:(ml?W-8:m.l+pw+step/2)-dx,height:ph+6,style:'fill:var(--fcband)'}));
+    svg.appendChild(S('line',{x1:dx,x2:dx,y1:m.t-6,y2:m.t+ph,style:'stroke:var(--ink3);stroke-width:1;stroke-dasharray:3 3'}));
+    svg.appendChild(S('text',{x:(dx+m.l+pw+step/2)/2,y:m.t-10,'text-anchor':'middle',style:'fill:var(--ink2);font-size:11px;font-weight:600;letter-spacing:.06em'},'FORECAST'));
+  }
+  o.labels.forEach((l,i)=>{
+    const t=o.xLabel?o.xLabel(i):l; if(!t) return;
+    const skip=(!o.xLabel && W<560 && i%2===1 && i!==n-1);
+    if(skip) return;
+    svg.appendChild(S('text',{x:X(i),y:Ht-m.b+18,'text-anchor':'middle',style:'fill:var(--ink2);font-size:11px'},t));
+  });
+  // range bar
+  if(o.range && o.fcIndex!=null) svg.appendChild(S('line',{x1:X(o.fcIndex),x2:X(o.fcIndex),y1:Y(o.range[0]),y2:Y(o.range[1]),style:'stroke:var(--ink3);stroke-width:3;stroke-linecap:round;opacity:.55'}));
+  // connectors
+  (o.connect||[]).forEach(c=>svg.appendChild(S('line',{x1:X(c.x1),y1:Y(c.y1),x2:X(c.x2),y2:Y(c.y2),style:`stroke:${c.color};stroke-width:2;stroke-dasharray:2 4;stroke-linecap:round`})));
+  // series
+  const ends=[];
+  o.series.forEach(s=>{
+    let d=''; s.vals.forEach((v,i)=>{ if(v==null){return} d+=((d&&s.vals[i-1]!=null)?'L':'M')+X(i)+' '+Y(v)+' '; });
+    svg.appendChild(S('path',{d,fill:'none',style:`stroke:${s.color};stroke-width:${s.w||2.25};stroke-linejoin:round;stroke-linecap:round;${s.dash?'stroke-dasharray:6 4;':''}`}));
+    s.vals.forEach((v,i)=>{
+      if(v==null) return;
+      const mk=s.markerFn?s.markerFn(i):{r:3.6,fill:s.color};
+      if(!mk) return;
+      svg.appendChild(S('circle',{cx:X(i),cy:Y(v),r:mk.r,style:`fill:${mk.hollow?'var(--card)':mk.fill};stroke:${mk.hollow?mk.fill:'var(--card)'};stroke-width:${mk.hollow?2:2}`}));
+    });
+    let li=-1; s.vals.forEach((v,i)=>{if(v!=null)li=i}); if(li>=0&&o.endLabels&&li<n-1) ends.push({y:Y(s.vals[li]),x:X(li),text:s.short||s.name,color:s.color,v:s.vals[li]});
+  });
+  // forecast markers
+  const mk=o.markers||[]; const smalls=mk.filter(k=>k.shape==='dot');
+  smalls.forEach((k,j)=>{k._dx=(j-(smalls.length-1)/2)*11});
+  const labs=[];
+  mk.forEach(k=>{
+    const cx=X(o.fcIndex)+(k._dx||0), cy=Y(k.y);
+    if(k.shape==='dot') svg.appendChild(S('circle',{cx,cy,r:4.5,style:`fill:var(--card);stroke:var(--ink2);stroke-width:2`}));
+    else{
+      const r=k.filled?8:7;
+      svg.appendChild(S('rect',{x:cx-r,y:cy-r,width:2*r,height:2*r,transform:`rotate(45 ${cx} ${cy})`,style:`fill:${k.filled?k.color:'var(--card)'};stroke:${k.color};stroke-width:2.5`}));
+    }
+    if(k.label) labs.push({y:cy,x:X(o.fcIndex)+30,text:k.label,color:'var(--ink)'});
+  });
+  // end labels with de-overlap
+  function place(arr,xoff,right){
+    arr.sort((a,b)=>a.y-b.y); for(let i=1;i<arr.length;i++) if(arr[i].y-arr[i-1].y<13) arr[i].y=arr[i-1].y+13;
+    arr.forEach(e=>svg.appendChild(S('text',{x:right?e.x:(e.x+xoff),y:e.y+4,style:`fill:${e.color==='var(--ink)'?'var(--ink)':'var(--ink)'};font-size:11.5px;font-weight:600`},e.text)));
+  }
+  if(labs.length) place(labs,0,true);
+  // hover layer
+  const vline=S('line',{y1:m.t-6,y2:m.t+ph,style:'stroke:var(--ink3);stroke-width:1;display:none'}); svg.appendChild(vline);
+  const hit=S('rect',{x:m.l-step/2,y:m.t-6,width:pw+step,height:ph+6,fill:'transparent',style:'cursor:crosshair'}); svg.appendChild(hit);
+  host.appendChild(svg);
+  const tt=H('div',{class:'tt'}); host.appendChild(tt);
+  let cur=-1;
+  function show(i){
+    cur=i; vline.setAttribute('x1',X(i)); vline.setAttribute('x2',X(i)); vline.style.display='';
+    tt.innerHTML=''; tt.appendChild(Object.assign(H('div',{class:'h'}),{textContent:o.labels[i]+(i===o.fcIndex?' (forecast)':'')}));
+    const rows=[];
+    o.series.forEach(s=>{const v=s.vals[i]; if(v!=null) rows.push({k:'line',color:s.color,dash:s.dash,v:pc(v),name:s.name+(s.det&&s.det[i]?' · '+s.det[i]:'')})});
+    if(i===o.fcIndex) mk.forEach(k=>rows.push({k:k.shape==='dot'?'dot':'dia',color:k.shape==='dot'?'var(--ink2)':k.color,filled:k.filled,v:pc(k.y),name:k.name+(k.detail?' · '+k.detail:'')}));
+    rows.forEach(r=>{
+      const row=H('div',{class:'r'});
+      let key; if(r.k==='line'){key=H('span',{class:'key'+(r.dash?' dash':'')});key.style.borderTopColor=r.color}
+      else if(r.k==='dot'){key=H('span',{class:'dot'});key.style.border='2px solid '+r.color}
+      else{key=H('span',{class:'dia'});key.style.background=r.filled?r.color:'transparent';key.style.border='2px solid '+r.color}
+      row.appendChild(key); row.appendChild(Object.assign(H('b'),{textContent:r.v})); row.appendChild(Object.assign(H('span'),{textContent:r.name})); tt.appendChild(row);
+    });
+    tt.style.display='block';
+    const hw=host.clientWidth, tw=tt.offsetWidth; let left=X(i)+14; if(left+tw>hw) left=X(i)-tw-14; if(left<0) left=4;
+    tt.style.left=left+'px'; tt.style.top=(m.t+4)+'px';
+  }
+  function hide(){vline.style.display='none';tt.style.display='none';cur=-1}
+  hit.addEventListener('pointermove',e=>{const r=svg.getBoundingClientRect();const x=(e.clientX-r.left)*(W/r.width);show(Math.max(0,Math.min(n-1,Math.round((x-m.l)/step))))});
+  hit.addEventListener('pointerleave',hide);
+  host.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){show(Math.min(n-1,cur<0?0:cur+1));e.preventDefault()}else if(e.key==='ArrowLeft'){show(Math.max(0,cur<0?n-1:cur-1));e.preventDefault()}else if(e.key==='Escape')hide()});
+  host.addEventListener('blur',hide);
+}
+function legend(items){
+  const d=H('div',{class:'legend'});
+  items.forEach(it=>{
+    const s=H('span'); let k;
+    if(it.t==='line'){k=H('span',{class:'key'+(it.dash?' dash':'')});k.style.borderTopColor=it.color}
+    else if(it.t==='dot'){k=H('span',{class:'dot'});k.style.border='2px solid var(--ink2)'}
+    else{k=H('span',{class:'dia'});k.style.background=it.filled?it.color:'transparent';k.style.border='2px solid '+it.color}
+    s.appendChild(k); s.appendChild(document.createTextNode(it.name)); d.appendChild(s);
+  });
+  return d;
+}
+function spark(vals,w=92,h=26){
+  const v=vals.filter(x=>x!=null); const svg=S('svg',{viewBox:`0 0 ${w} ${h}`,width:w,height:h,'aria-hidden':'true'});
+  if(v.length<2) return svg;
+  const lo=Math.min(...v),hi=Math.max(...v),r=(hi-lo)||1; const px=i=>3+i*(w-6)/(vals.length-1), py=x=>h-4-(x-lo)/r*(h-8);
+  let d='',last=null; vals.forEach((x,i)=>{if(x==null)return;d+=(d?'L':'M')+px(i)+' '+py(x)+' ';last=[px(i),py(x)]});
+  svg.appendChild(S('path',{d,fill:'none',style:'stroke:var(--s1);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round'}));
+  if(last) svg.appendChild(S('circle',{cx:last[0],cy:last[1],r:3,style:'fill:var(--s1);stroke:var(--card);stroke-width:1.5'}));
+  return svg;
+}
+function tableFrom(head,rows,cls){
+  const sc=H('div',{class:'scroll'}); const t=H('table'); const th=H('thead'); const tr=H('tr');
+  head.forEach(h=>tr.appendChild(Object.assign(H('th'),{textContent:h}))); th.appendChild(tr); t.appendChild(th);
+  const tb=H('tbody'); rows.forEach(r=>{const tr=H('tr');r.forEach(c=>tr.appendChild(Object.assign(H('td'),{textContent:c})));tb.appendChild(tr)}); t.appendChild(tb); sc.appendChild(t); return sc;
+}
+function dataDetails(head,rows){
+  const d=H('details'); d.appendChild(Object.assign(H('summary'),{textContent:'Show data table'})); d.appendChild(tableFrom(head,rows)); return d;
+}
+function tile(k,v,d,hl){
+  const t=H('div',{class:'tile'+(hl?' hl':'')}); t.appendChild(Object.assign(H('div',{class:'k'}),{textContent:k})); t.appendChild(Object.assign(H('div',{class:'v'}),{textContent:v})); if(d) t.appendChild(Object.assign(H('div',{class:'d'}),{textContent:d})); return t;
+}
+function card(title,hint){
+  const c=H('section',{class:'card'}); c.appendChild(Object.assign(H('h2'),{textContent:title})); if(hint) c.appendChild(Object.assign(H('p',{class:'hint'}),{textContent:hint})); return c;
+}
+
+/* ---------- views ---------- */
+function forecastMarkers(fc,withLabels,color){
+  const mk=[];
+  fc.pts.forEach(p=>mk.push({shape:'dot',y:p.r,name:p.name,detail:fmt(p.n)+' '+unitWord()}));
+  const adj=ST.adj[ST.partner]||0;
+  if(fc.pts.length>1||true){
+    if(adj>0.001) mk.push({shape:'dia',filled:false,y:fc.recRate,name:fc.recName,detail:fmt(fc.rec)+' '+unitWord(),color,label:withLabels?'Before shade '+pc(fc.recRate):null});
+  }
+  mk.push({shape:'dia',filled:true,y:fc.adjRate,name:adj>0.001?'Seasonal view (recommended)':fc.recName,detail:fmt(fc.adjN)+' '+unitWord(),color,label:withLabels?(adj>0.001?'Seasonal view ':'Forecast ')+pc(fc.adjRate):null});
+  return mk;
+}
+function fcLegend(fc){
+  const adj=ST.adj[ST.partner]||0, items=[];
+  if(fc.pts.length>1) items.push({t:'dot',name:'Individual methods'});
+  if(adj>0.001) items.push({t:'dia',filled:false,color:'var(--s1)',name:fc.recName});
+  items.push({t:'dia',filled:true,color:'var(--s1)',name:adj>0.001?'Seasonal view (recommended)':fc.recName});
+  return items;
+}
+
+function viewOverall(root){
+  const p=P(), seg=ST.seg, sr=series(null,seg), fc=forecast(null,seg), adj=ST.adj[ST.partner]||0;
+  const last=sr.rate[6], lastN=sr.nu[6];
+  const tiles=H('div',{class:'tiles'});
+  const f=p.fc[ST.basis];
+  const split = seg==='all' ? fmt(f.seg.rego.pool)+' registration · '+fmt(f.seg.reeng.pool)+' re-engagement' : SEGN[seg]+' students only';
+  tiles.appendChild(tile('Eligible pool, SB1 2027',fmt(fc.pool),split));
+  tiles.appendChild(tile('Latest actual, SB6 2026',pc(last),fmt(lastN)+' '+unitWord()+' of '+fmt(sr.el[6])));
+  tiles.appendChild(tile('Forecast before shade',pc(fc.recRate),fmt(fc.rec)+' '+unitWord()+' · '+sg(fc.recRate-last)+' pts vs SB6 2026'));
+  tiles.appendChild(tile('Seasonal view',pc(fc.adjRate),fmt(fc.adjN)+' '+unitWord()+(adj>0.001?' · shaded '+adj.toFixed(1)+' pts':' · no shade applied'),true));
+  const lo=Math.min(...fc.pts.map(x=>x.n)), hi=Math.max(...fc.pts.map(x=>x.n));
+  tiles.appendChild(tile('Method range',fc.pts.length>1?fmt(lo)+'–'+fmt(hi):fmt(fc.pts[0].n),fc.pts.length>1?(((hi-lo)/fc.pool*100).toFixed(1))+' pts between highest and lowest':'single method for this view'));
+  root.appendChild(tiles);
+
+  const c=card('Conversion of the eligible pool',ST.basis==='e'
+    ?'Enrolments counted per unit, as in your re-enrolment actuals, divided by the eligible pool in the census file. '
+    :'Unique students enrolled at census divided by the eligible pool.');
+  const leg=[{t:'line',color:'var(--s1)',name:'Actual conversion (census pool)'}];
+  const canRep = seg==='all' && ST.basis==='e';
+  const showRep = canRep && ST.showRep;
+  if(showRep) leg.push({t:'line',color:'var(--ink3)',dash:true,name:'Simple Tracker Census Data'});
+  fcLegend(fc).forEach(x=>leg.push(x));
+  if(canRep){
+    const lab=H('label',{for:'repTick',style:'display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2);cursor:pointer;margin:2px 0 0'});
+    const cb=H('input',{type:'checkbox',id:'repTick',style:'width:16px;height:16px;accent-color:var(--s1);cursor:pointer'}); cb.checked=ST.showRep;
+    cb.addEventListener('change',()=>{ST.showRep=cb.checked;render()});
+    lab.appendChild(cb); lab.appendChild(document.createTextNode('Include Simple Tracker Census Data')); c.appendChild(lab);
+  }
+  c.appendChild(legend(leg));
+  const host=H('div',{class:'chart'}); c.appendChild(host);
+  const series_=[{name:'Actual conversion',short:'Actual',color:'var(--s1)',vals:sr.rate.concat([null]),det:sr.nu.map((x,i)=>fmt(x)+' of '+fmt(sr.el[i])).concat([''])}];
+  if(showRep) series_.push({name:'Simple Tracker Census Data',color:'var(--ink3)',dash:true,w:2,vals:p.reported.concat([null]),markerFn:()=>({r:3,fill:'var(--ink3)'})});
+  const draw=()=>lineChart(host,{labels:LABELS,fcIndex:7,series:series_,markers:forecastMarkers(fc,true,'var(--s1)'),range:fc.pts.length>1?[Math.min(...fc.pts.map(x=>x.r)),Math.max(...fc.pts.map(x=>x.r))]:null,
+    connect:[{x1:6,y1:last,x2:7,y2:fc.adjRate,color:'var(--s1)'}],endLabels:false,title:p.name+' overall conversion',height:340});
+  root._draws.push(draw); root.appendChild(c); draw();
+  const rows=[]; PER.forEach((l,i)=>rows.push([l,fmt(sr.el[i]),fmt(sr.nu[i]),pc(sr.rate[i]),showRep?pc(p.reported[i]):'–']));
+  rows.push([FCL+' (forecast)',fmt(fc.pool),fmt(fc.adjN),pc(fc.adjRate),'–']);
+  c.appendChild(dataDetails(['Period','Eligible pool',unitWord()[0].toUpperCase()+unitWord().slice(1),'Conversion','Reported'],rows));
+  c.appendChild(Object.assign(H('p',{class:'note'}),{textContent:'The census-pool rate can differ from your reported rate because your sheet uses its own pool counts (for example ECU’s eligible pool differs by up to 45 in a period). Forecasts use the census-pool rates so every view agrees.'}));
+
+  const m=card('How the forecast is built',seg==='all'?'Each method applies historical conversion to the SB1 2027 eligible pool. The roll-up is the equal-weight average of the four.':'Segment views use the two methods that split by segment.');
+  const mrows=fc.pts.map(x=>[x.k+'. '+x.name,fmt(x.n),pc(x.r),sg(x.r-last)+' pts']);
+  mrows.push([fc.recName,fmt(fc.rec),pc(fc.recRate),sg(fc.recRate-last)+' pts']);
+  mrows.push(['Seasonal view (shade '+adj.toFixed(1)+' pts)',fmt(fc.adjN),pc(fc.adjRate),sg(fc.adjRate-last)+' pts']);
+  m.appendChild(tableFrom(['Method',unitWord()[0].toUpperCase()+unitWord().slice(1),'Conversion','vs SB6 2026'],mrows));
+  const cl=H('p',{class:'call'}); cl.textContent=CALL[ST.partner]; m.appendChild(cl);
+  root.appendChild(m);
+}
+
+function progRows(){
+  const p=P(); const out=[];
+  p.programs.forEach(pr=>{
+    const sr=series(pr,ST.seg), fc=forecast(pr,ST.seg);
+    const valid=sr.rate.filter(x=>x!=null);
+    const sl=slope(sr.rate,sr.el);
+    out.push({pr,sr,fc,sl,avg:sr.el.reduce((a,b)=>a+b,0)>0?sr.nu.reduce((a,b)=>a+b,0)/sr.el.reduce((a,b)=>a+b,0)*100:null,n:valid.length});
+  });
+  return out;
+}
+function viewPrograms(root){
+  const p=P(), rows=progRows(), adj=ST.adj[ST.partner]||0;
+  const ups=rows.filter(r=>dir(r.sl)==='up').length, downs=rows.filter(r=>dir(r.sl)==='down').length;
+  const tiles=H('div',{class:'tiles'});
+  tiles.appendChild(tile('Programs trending up',String(ups),'rising by more than 0.5 pts per period'));
+  tiles.appendChild(tile('Programs trending down',String(downs),'falling by more than 0.5 pts per period'));
+  tiles.appendChild(tile('Programs shown',String(rows.length),p.thin.length?('Not shown, under 25 students a period: '+p.thin.join(', ')):'All programs shown'));
+  root.appendChild(tiles);
+
+  const sorters={trend:(a,b)=>(b.sl==null?-99:b.sl)-(a.sl==null?-99:a.sl),pool:(a,b)=>(b.fc?b.fc.pool:0)-(a.fc?a.fc.pool:0),name:(a,b)=>a.pr.localeCompare(b.pr)};
+  const c=card('Which programs are moving',
+    'Trend is the straight-line change in conversion per period across the seven periods, SB6 2025 to SB6 2026. The forecast is for SB1 2027'+(adj>0.001?' after the '+adj.toFixed(1)+' pt seasonal shade.':'.')+' Select a row to open that program.');
+  const bar=H('div',{style:'display:flex;gap:10px;align-items:center;margin:2px 0 8px'});
+  bar.appendChild(Object.assign(H('label',{for:'sortBy',style:'font-size:12px;color:var(--ink3)'}),{textContent:'Sort by'}));
+  const sel=H('select',{id:'sortBy',style:'min-width:150px'}); [['trend','Trend (up first)'],['pool','SB1 2027 pool'],['name','Name']].forEach(([v,t])=>{const o=H('option',{value:v});o.textContent=t;if(ST.sortBy===v)o.selected=true;sel.appendChild(o)});
+  sel.addEventListener('change',()=>{ST.sortBy=sel.value;render()}); bar.appendChild(sel); c.appendChild(bar);
+  rows.sort(sorters[ST.sortBy]);
+  const sc=H('div',{class:'scroll'}); const t=H('table',{class:'wide'}); const hd=H('thead'); const tr=H('tr');
+  ['Program','Pool','Latest','7-period avg','Trend','Direction','Over time','Forecast','vs latest','Forecast '+unitWord()].forEach(h=>tr.appendChild(Object.assign(H('th'),{textContent:h})));
+  hd.appendChild(tr); t.appendChild(hd); const tb=H('tbody'); let sumF=0;
+  rows.forEach(r=>{
+    const tr=H('tr',{class:'click',tabindex:'0'}); const last=r.sr.rate[6];
+    const cells=[r.pr,r.fc?fmt(r.fc.pool):'–',pc(last),pc(r.avg),r.sl==null?'–':sg(r.sl,2)+' pts'];
+    cells.forEach(x=>tr.appendChild(Object.assign(H('td'),{textContent:x})));
+    const td=H('td'); td.appendChild(pill(r.sl)); tr.appendChild(td);
+    const ts=H('td'); ts.appendChild(spark(r.sr.rate)); tr.appendChild(ts);
+    if(r.fc){sumF+=r.fc.adjN; [pc(r.fc.adjRate), last!=null?sg(r.fc.adjRate-last)+' pts':'–', fmt(r.fc.adjN)].forEach(x=>tr.appendChild(Object.assign(H('td'),{textContent:x})))}
+    else [1,2,3].forEach(()=>tr.appendChild(Object.assign(H('td'),{textContent:'–'})));
+    const go=()=>{ST.prog=r.pr;ST.tab='single';render()}; tr.addEventListener('click',go); tr.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); sc.appendChild(t); c.appendChild(sc);
+  c.appendChild(Object.assign(H('p',{class:'note'}),{textContent:'Program forecasts are the average of the program-rate and program × segment methods'+(ST.seg==='all'?'; the program rows add to '+fmt(sumF)+' '+unitWord()+', against '+fmt(forecast(null,'all').adjN)+' for the partner view, because the partner view also blends the overall and segment methods. Forecasts start from each program\u2019s seven-period average, so a rising program can forecast below its latest rate.':'.')+(ST.seg!=='all'?' Small program × segment groups are volatile; read single points with care.':'')}));
+  root.appendChild(c);
+
+  // compare chart
+  const cc=card('Compare programs','Pick up to four. Each program keeps its colour. The diamond is the SB1 2027 forecast for that program.');
+  const top=p.programs.slice(0,8); if(!ST.sel.length||ST.sel.some(x=>!top.includes(x))) ST.sel=top.slice(0,4);
+  const chips=H('div',{class:'chips'});
+  top.forEach((pr,i)=>{
+    const b=H('button',{type:'button',class:'chip','aria-pressed':String(ST.sel.includes(pr))});
+    const k=H('span',{class:'key'}); k.style.borderTopColor='var(--s'+(i+1)+')'; b.appendChild(k); b.appendChild(document.createTextNode(pr));
+    b.addEventListener('click',()=>{const on=ST.sel.includes(pr); if(on) ST.sel=ST.sel.filter(x=>x!==pr); else if(ST.sel.length<4) ST.sel=ST.sel.concat([pr]); else return; render()});
+    if(!ST.sel.includes(pr)&&ST.sel.length>=4) b.disabled=true;
+    chips.appendChild(b);
+  });
+  cc.appendChild(chips);
+  if(p.programs.length>8) cc.appendChild(Object.assign(H('p',{class:'note',style:'margin:0 0 6px'}),{textContent:'The eight largest programs are available here. Open the others from the table above.'}));
+  const host=H('div',{class:'chart'}); cc.appendChild(host);
+  const ser=[], mk=[], conn=[];
+  ST.sel.forEach(pr=>{
+    const i=top.indexOf(pr), col='var(--s'+(i+1)+')', sr=series(pr,ST.seg), fc=forecast(pr,ST.seg);
+    ser.push({name:pr,short:pr,color:col,vals:sr.rate.concat([null]),det:sr.nu.map((x,j)=>fmt(x)+' of '+fmt(sr.el[j])).concat([''])});
+    if(fc){mk.push({shape:'dia',filled:true,y:fc.adjRate,name:pr+' forecast',detail:fmt(fc.adjN)+' '+unitWord(),color:col,label:(pr.length>22?pr.slice(0,21)+'\u2026':pr)+' '+pc(fc.adjRate)}); if(sr.rate[6]!=null) conn.push({x1:6,y1:sr.rate[6],x2:7,y2:fc.adjRate,color:col})}
+  });
+  cc.appendChild(legend(ser.map(s=>({t:'line',color:s.color,name:s.name})).concat([{t:'dia',filled:true,color:'var(--ink2)',name:'SB1 2027 forecast'}])));
+  const draw=()=>lineChart(host,{labels:LABELS,fcIndex:7,series:ser,markers:mk,connect:conn,endLabels:false,title:'Program conversion comparison',height:360});
+  root._draws.push(draw); cc.appendChild(host); root.appendChild(cc); draw();
+  const hrow=['Program','Period'].slice(0,0);
+  const trs=[]; PER.forEach((l,i)=>trs.push([l].concat(ST.sel.map(pr=>pc(series(pr,ST.seg).rate[i])))));
+  trs.push([FCL+' (forecast)'].concat(ST.sel.map(pr=>{const f=forecast(pr,ST.seg);return f?pc(f.adjRate):'–'})));
+  cc.appendChild(dataDetails(['Period'].concat(ST.sel),trs));
+}
+
+function viewSingle(root){
+  const p=P(); if(!ST.prog||!p.programs.includes(ST.prog)) ST.prog=p.programs[0];
+  const pr=ST.prog, adj=ST.adj[ST.partner]||0;
+  const bar=H('div',{class:'controls'}); const w=H('div',{class:'ctl'}); w.appendChild(Object.assign(H('label',{for:'progSel'}),{textContent:'Program'}));
+  const sel=H('select',{id:'progSel'}); p.programs.forEach(x=>{const o=H('option',{value:x});o.textContent=x;if(x===pr)o.selected=true;sel.appendChild(o)});
+  sel.addEventListener('change',()=>{ST.prog=sel.value;render()}); w.appendChild(sel); bar.appendChild(w);
+  bar.appendChild(Object.assign(H('p',{class:'note',style:'margin:0;align-self:center'}),{textContent:'This view shows all students, registration and re-engagement together. The student filter above does not apply.'}));
+  root.appendChild(bar);
+  const sa=series(pr,'all'), sr=series(pr,'rego'), se=series(pr,'reeng'), fa=forecast(pr,'all'), fr=forecast(pr,'rego'), fe=forecast(pr,'reeng');
+  const sl=slope(sa.rate,sa.el);
+  const tiles=H('div',{class:'tiles'});
+  tiles.appendChild(tile('Eligible pool, SB1 2027',fmt(fa.pool),(fr?fmt(fr.pool):'0')+' registration · '+(fe?fmt(fe.pool):'0')+' re-engagement'));
+  tiles.appendChild(tile('Latest actual, SB6 2026',pc(sa.rate[6]),fmt(sa.nu[6])+' '+unitWord()+' of '+fmt(sa.el[6])));
+  const t3=tile('Trend',sl==null?'–':sg(sl,2)+' pts','per period over seven periods'); t3.appendChild(pill(sl)); tiles.appendChild(t3);
+  tiles.appendChild(tile('Forecast before shade',pc(fa.recRate),fmt(fa.rec)+' '+unitWord()));
+  tiles.appendChild(tile('Seasonal view',pc(fa.adjRate),fmt(fa.adjN)+' '+unitWord()+(adj>0.001?' · shaded '+adj.toFixed(1)+' pts':''),true));
+  root.appendChild(tiles);
+
+  const c=card(pr+' conversion','Blue is all students. Registration (students already enrolled this term) and re-engagement (everyone else) are shown for comparison.');
+  const ser=[{name:'All students',short:'All',color:'var(--s1)',vals:sa.rate.concat([null]),det:sa.nu.map((x,i)=>fmt(x)+' of '+fmt(sa.el[i])).concat([''])},
+    {name:'Registration',short:'Registration',color:'var(--s3)',w:1.8,vals:sr.rate.concat([null]),det:sr.nu.map((x,i)=>fmt(x)+' of '+fmt(sr.el[i])).concat([''])},
+    {name:'Re-engagement',short:'Re-engagement',color:'var(--s2)',w:1.8,vals:se.rate.concat([null]),det:se.nu.map((x,i)=>fmt(x)+' of '+fmt(se.el[i])).concat([''])}];
+  const mk=[], conn=[];
+  mk.push({shape:'dot',y:fa.pts[0].r,name:fa.pts[0].name,detail:fmt(fa.pts[0].n)+' '+unitWord()}); mk.push({shape:'dot',y:fa.pts[1].r,name:fa.pts[1].name,detail:fmt(fa.pts[1].n)+' '+unitWord()});
+  if(adj>0.001) mk.push({shape:'dia',filled:false,y:fa.recRate,name:'Average of the two methods',detail:fmt(fa.rec)+' '+unitWord(),color:'var(--s1)'});
+  mk.push({shape:'dia',filled:true,y:fa.adjRate,name:adj>0.001?'Seasonal view (recommended)':'Forecast (average of the two methods)',detail:fmt(fa.adjN)+' '+unitWord(),color:'var(--s1)',label:(adj>0.001?'Seasonal view ':'Forecast ')+pc(fa.adjRate)});
+  conn.push({x1:6,y1:sa.rate[6],x2:7,y2:fa.adjRate,color:'var(--s1)'});
+  [[fr,'rego','Registration','var(--s3)',sr],[fe,'reeng','Re-engagement','var(--s2)',se]].forEach(([f,k,nm,col,s])=>{
+    if(f){mk.push({shape:'dia',filled:true,y:f.adjRate,name:nm+' forecast',detail:fmt(f.adjN)+' '+unitWord(),color:col}); if(s.rate[6]!=null) conn.push({x1:6,y1:s.rate[6],x2:7,y2:f.adjRate,color:col})}
+  });
+  c.appendChild(legend(ser.map(s=>({t:'line',color:s.color,name:s.name})).concat([{t:'dot',name:'Individual methods (all students)'},{t:'dia',filled:true,color:'var(--ink2)',name:'SB1 2027 forecast'}])));
+  const host=H('div',{class:'chart'}); c.appendChild(host);
+  const draw=()=>lineChart(host,{labels:LABELS,fcIndex:7,series:ser,markers:mk,connect:conn,endLabels:false,title:pr+' conversion',height:360});
+  root._draws.push(draw); root.appendChild(c); draw();
+  const rows=PER.map((l,i)=>[l,fmt(sa.el[i]),fmt(sa.nu[i]),pc(sa.rate[i]),pc(sr.rate[i]),pc(se.rate[i])]);
+  rows.push([FCL+' (forecast)',fmt(fa.pool),fmt(fa.adjN),pc(fa.adjRate),fr?pc(fr.adjRate):'–',fe?pc(fe.adjRate):'–']);
+  c.appendChild(dataDetails(['Period','Eligible pool',unitWord()[0].toUpperCase()+unitWord().slice(1),'All students','Registration','Re-engagement'],rows));
+  c.appendChild(Object.assign(H('p',{class:'note'}),{textContent:'Small groups swing a lot: a program with 30 re-engagement students moves 3 points for every student. The segment forecasts use the program × segment method only.'}));
+}
+
+function seasonStats(P_,metric){
+  const Sx=D.partners[P_].seasonal, lab=Sx.labels, v=Sx[metric];
+  const y0=+lab[0].split(' ')[1]; const anom = P_==='UC'?lab.indexOf('SB4 2023'):-1;
+  const tr=[]; for(let y=y0;y<2026;y++){const a=lab.indexOf('SB6 '+y), b=lab.indexOf('SB1 '+(y+1)); if(a>=0&&b>=0) tr.push({y,a:v[a],b:v[b],d:v[b]-v[a]})}
+  const devs=[]; for(let y=Math.max(y0+1,2020);y<=2025;y++){const ix=[1,2,3,4,5,6].map(k=>lab.indexOf('SB'+k+' '+y)); if(ix.some(i=>i<0)) continue;
+    const use=ix.filter(i=>i!==anom); const avg=use.reduce((s,i)=>s+v[i],0)/use.length; devs.push({y,d:v[ix[0]]-avg})}
+  const ds=tr.map(t=>t.d).slice().sort((a,b)=>a-b), med=ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2;
+  return {tr,devs,anom,mean:tr.reduce((s,t)=>s+t.d,0)/tr.length,med,fell:tr.filter(t=>t.d<0).length,devMean:devs.reduce((s,t)=>s+t.d,0)/devs.length};
+}
+function viewSeason(root){
+  const p=P(), Sx=p.seasonal, metric=ST.sMetric, v=Sx[metric], st=seasonStats(ST.partner,metric);
+  const mc=H('div',{class:'controls'}); const w=H('div',{class:'ctl'}); w.appendChild(Object.assign(H('span',{class:'lab'}),{textContent:'Conversion measure'}));
+  const sg_=H('div',{class:'seg'}); [['elig','Eligible pool'],['total','Total pool']].forEach(([k,t])=>{const b=H('button',{type:'button','aria-pressed':String(metric===k)});b.textContent=t;b.addEventListener('click',()=>{ST.sMetric=k;render()});sg_.appendChild(b)}); w.appendChild(sg_); mc.appendChild(w);
+  mc.appendChild(Object.assign(H('p',{class:'note',style:'margin:0;align-self:center'}),{textContent:'Reported conversion from your sheets, '+Sx.labels[0]+' to SB6 2026. The count and student filters do not apply here.'}));
+  root.appendChild(mc);
+  const tiles=H('div',{class:'tiles'});
+  tiles.appendChild(tile('SB6 to SB1 fell in',st.fell+' of '+st.tr.length+' years','from '+st.tr[0].y+' to '+(st.tr[st.tr.length-1].y+1)));
+  tiles.appendChild(tile('Average SB6 to SB1 change',sg(st.mean)+' pts','median '+sg(st.med)+' pts'));
+  tiles.appendChild(tile('SB1 against its year average',st.devs.length?sg(st.devMean)+' pts':'–',st.devs.length?'average over '+st.devs.length+' full years'+(st.anom>=0?', SB4 2023 left out':''):'not enough years'));
+  tiles.appendChild(tile('Shade used in the forecast',(ST.adj[ST.partner]||0).toFixed(1)+' pts','set in the control row',true));
+  root.appendChild(tiles);
+
+  const c=card('Conversion by teaching period','SB1 periods are orange and SB6 periods are blue. Look at the step from each blue point to the next orange one.');
+  c.appendChild(legend([{t:'dia',filled:true,color:'var(--s2)',name:'SB1'},{t:'dia',filled:true,color:'var(--s1)',name:'SB6'},{t:'line',color:'var(--ink3)',name:'Other periods'}].map(x=>x.t==='dia'?{t:'dot',name:x.name,_c:x.color}:x)));
+  // custom legend dots with colour
+  c.lastChild.querySelectorAll('.dot').forEach((d,i)=>{d.style.border='0';d.style.background=i===0?'var(--s2)':'var(--s1)'});
+  const host=H('div',{class:'chart'}); c.appendChild(host);
+  const labels=Sx.labels; const isP=(i,t)=>labels[i].startsWith(t);
+  const ser=[{name:(metric==='elig'?'Eligible':'Total')+'-pool conversion',color:'var(--ink3)',w:1.6,vals:v,
+    markerFn:i=>{ if(i===st.anom) return {r:5,fill:'var(--s2)',hollow:true}; if(isP(i,'SB1')) return {r:5,fill:'var(--s2)'}; if(isP(i,'SB6')) return {r:5,fill:'var(--s1)'}; return null }}];
+  const draw=()=>lineChart(host,{labels,series:ser,markers:[],endLabels:false,title:'Seasonal pattern',height:320,xLabel:i=>isP(i,'SB1')?labels[i].split(' ')[1]:'' });
+  root._draws.push(draw); root.appendChild(c); draw();
+  if(st.anom>=0) c.appendChild(Object.assign(H('p',{class:'note'}),{textContent:'The hollow orange ring is SB4 2023 (77.3% and 85.2%), about 15 points above its neighbours. It looks like a data or pool anomaly and is left out of the averages.'}));
+  c.appendChild(dataDetails(['Period',metric==='elig'?'Eligible pool':'Total pool'],labels.map((l,i)=>[l,pc(v[i])])));
+
+  const b=card('SB6 to SB1 change by year','Percentage points. Blue is a rise, red a fall.');
+  const bh=H('div',{class:'chart'}); b.appendChild(bh);
+  const bd=()=>barChart(bh,st.tr.map(t=>({label:t.y+'→'+String(t.y+1).slice(2),value:t.d,detail:t.a.toFixed(1)+'% to '+t.b.toFixed(1)+'%'})));
+  root._draws.push(bd); root.appendChild(b); bd();
+  b.appendChild(dataDetails(['Transition','SB6','SB1','Change (pts)'],st.tr.map(t=>['SB6 '+t.y+' to SB1 '+(t.y+1),t.a.toFixed(1)+'%',t.b.toFixed(1)+'%',sg(t.d)])));
+  const cl=H('p',{class:'call'}); cl.textContent=CALL[ST.partner]; b.appendChild(cl);
+}
+function barChart(host,items){
+  host.innerHTML=''; const W=Math.max(300,host.clientWidth||700), Ht=250, m={l:44,r:16,t:20,b:40};
+  const pw=W-m.l-m.r, ph=Ht-m.t-m.b, n=items.length, bw=Math.min(54,pw/n*.6);
+  const vs=items.map(i=>i.value); let lo=Math.min(0,...vs), hi=Math.max(0,...vs); const pad=(hi-lo)*.15||1; lo-=pad; hi+=pad; const ts=(hi-lo)>14?5:(hi-lo)>7?2:1; lo=Math.floor(lo/ts)*ts; hi=Math.ceil(hi/ts)*ts;
+  const Y=v=>m.t+ph-(v-lo)/(hi-lo)*ph, X=i=>m.l+pw/n*(i+.5);
+  const svg=S('svg',{viewBox:`0 0 ${W} ${Ht}`,role:'img','aria-label':'SB6 to SB1 change by year'});
+  for(let v=lo;v<=hi+1e-9;v+=ts){svg.appendChild(S('line',{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),style:`stroke:${v===0?'var(--ink3)':'var(--grid)'};stroke-width:1`}));svg.appendChild(S('text',{x:m.l-8,y:Y(v)+4,'text-anchor':'end',style:'fill:var(--ink3);font-size:11px'},(v>0?'+':v<0?'−':'')+Math.abs(v)))}
+  const tt=H('div',{class:'tt'});
+  items.forEach((it,i)=>{
+    const y0=Y(0), y1=Y(it.value), top=Math.min(y0,y1), h=Math.max(2,Math.abs(y1-y0));
+    const r=S('rect',{x:X(i)-bw/2,y:top,width:bw,height:h,rx:3,style:`fill:${it.value>=0?'var(--s1)':'var(--s8)'}`});
+    svg.appendChild(r);
+    svg.appendChild(S('text',{x:X(i),y:it.value>=0?top-6:top+h+13,'text-anchor':'middle',style:'fill:var(--ink);font-size:11.5px;font-weight:600'},sg(it.value)));
+    svg.appendChild(S('text',{x:X(i),y:Ht-m.b+18,'text-anchor':'middle',style:'fill:var(--ink2);font-size:11px'},it.label));
+    const hit=S('rect',{x:X(i)-pw/n/2,y:m.t,width:pw/n,height:ph,fill:'transparent'});
+    hit.addEventListener('pointermove',()=>{tt.innerHTML='';tt.appendChild(Object.assign(H('div',{class:'h'}),{textContent:it.label}));const row=H('div',{class:'r'});row.appendChild(Object.assign(H('b'),{textContent:sg(it.value)+' pts'}));row.appendChild(Object.assign(H('span'),{textContent:it.detail}));tt.appendChild(row);tt.style.display='block';let l=X(i)+16;if(l+200>host.clientWidth)l=X(i)-210;tt.style.left=Math.max(4,l)+'px';tt.style.top='10px'});
+    hit.addEventListener('pointerleave',()=>{tt.style.display='none'}); svg.appendChild(hit);
+  });
+  host.appendChild(svg); host.appendChild(tt);
+}
+
+/* ---------- shell ---------- */
+function render(){
+  const root=$('#view'); root._draws=[]; root.innerHTML='';
+  document.querySelectorAll('[data-basis]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.basis===ST.basis)));
+  document.querySelectorAll('[data-seg]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.seg===ST.seg)));
+  document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===ST.tab)));
+  $('#adj').value=(ST.adj[ST.partner]||0).toFixed(1);
+  const showBS=!['season','single'].includes(ST.tab), showSeg=!['season','single'].includes(ST.tab);
+  $('#segCtl').style.display=showSeg?'':'none'; $('#basisCtl').style.display=ST.tab==='season'?'none':'';
+  ({overall:viewOverall,programs:viewPrograms,single:viewSingle,season:viewSeason})[ST.tab](root);
+  const p=P();
+  $('#footnote').textContent='Sources: census cohort files SB6 2025 to SB6 2026 and your re-enrolment actuals for '+p.name+'; SB1 2027 pool from the BU2 Eligible Pool View of 16 Nov 2026. Eligible pool excludes Next Term Sub Status "No Course Available" and Next Term Enrollment Status Graduated or Withdrawn. Registration is Enrolled before the term. The enrolment-basis split by segment is estimated by applying each program’s enrolments-per-student multiple to both segments. Forecasts are initial estimates, not the final target.';
+}
+let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{const r=$('#view'); (r._draws||[]).forEach(f=>f())},120)});
+(function init(){
+  const sel=$('#partner'); Object.keys(D.partners).forEach(k=>{const o=H('option',{value:k});o.textContent=D.partners[k].name;if(k===ST.partner)o.selected=true;sel.appendChild(o)});
+  sel.addEventListener('change',()=>{ST.partner=sel.value;ST.sel=[];ST.prog=null;render()});
+  document.querySelectorAll('[data-basis]').forEach(b=>b.addEventListener('click',()=>{ST.basis=b.dataset.basis;render()}));
+  document.querySelectorAll('[data-seg]').forEach(b=>b.addEventListener('click',()=>{ST.seg=b.dataset.seg;render()}));
+  document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{ST.tab=b.dataset.tab;render()}));
+  $('#adj').addEventListener('change',e=>{const v=parseFloat(e.target.value);ST.adj[ST.partner]=isFinite(v)?Math.max(0,Math.min(10,v)):0;render()});
+  $('#adjReset').addEventListener('click',()=>{ST.adj[ST.partner]=P().adj;render()});
+  const h=location.hash.replace('#',''); if(['overall','programs','single','season'].includes(h)) ST.tab=h;
+  render();
+})();
+</script>
+</body>
+</html>
